@@ -23,7 +23,7 @@
       <nav class="nav-links">
         <a href="index.html">Home</a>
         <a href="gakuran.html" class="active">Gakuran Shop</a>
-        <a href="#reviews">Reviews</a>
+        <a href="#leave-review">Leave Review</a>
         <a href="https://www.facebook.com/jhulcammayo" target="_blank" rel="noopener" class="social-pill fb">Facebook</a>
         <a href="https://t.me/+zT-UnUY2CDUzNDU1" target="_blank" rel="noopener" class="social-pill tg">Telegram</a>
       </nav>
@@ -66,6 +66,48 @@
       </div>
     </section>
 
+    <!-- Leave a Review — always visible on page -->
+    <section class="section" id="leave-review">
+      <div class="card card-green">
+        <h2 class="section-title">⭐ Leave a Review</h2>
+        <p class="section-subtitle">After Jhul completes your order, he'll send you a review code. Enter it here to leave a verified review.</p>
+
+        <div id="review-locked">
+          <form id="unlock-review-form" style="max-width:400px;margin:0 auto;">
+            <div class="form-group">
+              <label for="review-code">Review Code from Jhul</label>
+              <input type="text" id="review-code" placeholder="e.g. JHUL-ABC123" required autocomplete="off" style="text-transform:uppercase;" />
+            </div>
+            <button type="submit" class="btn btn-green" style="width:100%;">Unlock Review Form</button>
+          </form>
+        </div>
+
+        <div id="review-unlocked" class="hidden">
+          <form id="review-form" style="max-width:520px;margin:0 auto;">
+            <div class="form-group">
+              <label>Rating</label>
+              <div class="star-rating">
+                <button type="button" data-star="1">★</button>
+                <button type="button" data-star="2">★</button>
+                <button type="button" data-star="3">★</button>
+                <button type="button" data-star="4">★</button>
+                <button type="button" data-star="5">★</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="review-author">Your Name / Username</label>
+              <input type="text" id="review-author" placeholder="How you'd like to be shown" required />
+            </div>
+            <div class="form-group">
+              <label for="review-text">Your Review</label>
+              <textarea id="review-text" placeholder="Share your experience..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;">Submit Review</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
     <!-- Verified Reviews display -->
     <section class="section review-form-section" id="reviews">
       <h2 class="section-title">Verified Customer Reviews</h2>
@@ -97,12 +139,11 @@
     </div>
   </div>
 
-  <!-- Modal 2: Instructions + Review Code -->
-  <div id="modal-instructions" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-instructions-title">
+  <!-- Modal 2: Instructions (cannot be closed accidentally) -->
+  <div id="modal-instructions" class="modal-overlay modal-no-close hidden" role="dialog" aria-modal="true" aria-labelledby="modal-instructions-title">
     <div class="modal-box modal-box-lg">
-      <button type="button" class="modal-close" data-close="modal-instructions" aria-label="Close">&times;</button>
-      <div class="modal-header">
-        <h2 id="modal-instructions-title">📋 Next Steps</h2>
+      <div class="modal-header" style="padding-right:0;">
+        <h2 id="modal-instructions-title">📋 Next Steps — Read Carefully!</h2>
         <p>Follow these instructions to complete your order.</p>
       </div>
 
@@ -123,6 +164,9 @@
           <li>
             <span><strong>Step 4:</strong> <strong>Wait for your Private Server link</strong> and your rerolls to be completed!</span>
           </li>
+          <li>
+            <span><strong>Step 5:</strong> After your order is done, Jhul will send you a <strong>review code</strong>. Scroll down on this page to enter it and leave a review!</span>
+          </li>
         </ol>
 
         <div class="notice notice-warning mt-2" style="margin-bottom:0;">
@@ -131,47 +175,9 @@
         </div>
       </div>
 
-      <hr class="modal-divider" />
-
-      <!-- Review code section -->
-      <div class="modal-review-section">
-        <div id="review-locked">
-          <h4>⭐ Leave a Review (After Order Complete)</h4>
-          <p>Once Jhul finishes your order, he'll send you a review code. Enter it below to leave a verified review.</p>
-          <form id="unlock-review-form">
-            <div class="form-group" style="margin-bottom:0.75rem;">
-              <label for="review-code">Review Code from Jhul</label>
-              <input type="text" id="review-code" placeholder="e.g. JHUL-ABC123" required autocomplete="off" style="text-transform:uppercase;" />
-            </div>
-            <button type="submit" class="btn btn-green" style="width:100%;">Unlock Review Form</button>
-          </form>
-        </div>
-
-        <div id="review-unlocked" class="hidden">
-          <h4>Write Your Review</h4>
-          <form id="review-form">
-            <div class="form-group">
-              <label>Rating</label>
-              <div class="star-rating">
-                <button type="button" data-star="1">★</button>
-                <button type="button" data-star="2">★</button>
-                <button type="button" data-star="3">★</button>
-                <button type="button" data-star="4">★</button>
-                <button type="button" data-star="5">★</button>
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="review-author">Your Name / Username</label>
-              <input type="text" id="review-author" placeholder="How you'd like to be shown" required />
-            </div>
-            <div class="form-group">
-              <label for="review-text">Your Review</label>
-              <textarea id="review-text" placeholder="Share your experience..." required></textarea>
-            </div>
-            <button type="submit" class="btn btn-primary" style="width:100%;">Submit Review</button>
-          </form>
-        </div>
-      </div>
+      <button type="button" id="btn-continue-review" class="btn btn-primary" style="width:100%;margin-top:1.25rem;padding:1rem;font-size:1.05rem;">
+        ✓ I Understand — Go to Review Section ↓
+      </button>
     </div>
   </div>
 

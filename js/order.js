@@ -28,11 +28,24 @@ function initModals() {
     });
   });
 
-  document.querySelectorAll(".modal-overlay").forEach((overlay) => {
+  document.querySelectorAll(".modal-overlay:not(.modal-no-close)").forEach((overlay) => {
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) closeModal(overlay.id);
     });
   });
+
+  const continueBtn = document.getElementById("btn-continue-review");
+  if (continueBtn) {
+    continueBtn.addEventListener("click", () => {
+      closeModal("modal-instructions");
+      const reviewSection = document.getElementById("leave-review");
+      if (reviewSection) {
+        reviewSection.scrollIntoView({ behavior: "smooth", block: "start" });
+        reviewSection.classList.add("highlight-section");
+        setTimeout(() => reviewSection.classList.remove("highlight-section"), 2000);
+      }
+    });
+  }
 }
 
 function drawInvoice(order) {

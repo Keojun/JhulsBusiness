@@ -133,7 +133,6 @@ function initReviewForm() {
       activeCode = null;
 
       loadSiteReviews("site-reviews-grid");
-      if (window.closeModal) window.closeModal("modal-instructions");
     });
   }
 
