@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Jhul's Business</title>
+  <link rel="icon" href="images/jhul-logo.png" type="image/png" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="logo-link">
+        <img src="images/jhul-logo.png" alt="Jhul Logo" class="logo-img" />
+        <span class="logo-text">Jhul's Business — Admin</span>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html">← Back to Site</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container admin-panel" style="padding-top:2rem;">
+
+    <!-- Login -->
+    <div id="login-section">
+      <div class="card" style="max-width:400px;margin:2rem auto;">
+        <h2 style="margin-bottom:0.5rem;">Owner Login</h2>
+        <p style="color:var(--dark-soft);margin-bottom:1.25rem;font-size:0.95rem;">Manage orders and generate review codes for verified customers.</p>
+        <form id="admin-login">
+          <div class="form-group">
+            <label for="admin-password">Password</label>
+            <input type="password" id="admin-password" placeholder="Enter admin password" required />
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;">Login</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="admin-dashboard" class="hidden">
+      <h1 class="section-title">Order Management</h1>
+      <p class="section-subtitle">Complete orders after rerolls are delivered, then send the review code to the customer.</p>
+
+      <div class="notice notice-info mb-2">
+        <span class="notice-icon">ℹ️</span>
+        <div>
+          <strong>How it works:</strong> When a customer places an order, it appears here. After you finish their rerolls, click "Complete & Generate Code" and send the code to them on Messenger. They use it on the Gakuran page to leave a verified review.
+        </div>
+      </div>
+
+      <div class="card" style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Username</th>
+              <th>Rerolls</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="orders-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="notice notice-info mt-2">
+        <span class="notice-icon">ℹ️</span>
+        <div>
+          <strong>Database connected:</strong> When Supabase is configured in Vercel environment variables, orders from all customers appear here automatically. Without it, orders fall back to browser localStorage (same device only).
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "jhuls-business",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Jhul's Gakuran reroll shop",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1"
+  }
+}
