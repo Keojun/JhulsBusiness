@@ -163,6 +163,19 @@ function initOrderForm() {
     currentOrder = await addOrder(orderData);
     drawInvoice(currentOrder);
     preview.classList.add("visible");
+
+    const statusEl = document.getElementById("order-save-status");
+    if (statusEl) {
+      if (currentOrder.savedToDb) {
+        statusEl.className = "notice notice-info mt-2";
+        statusEl.innerHTML = '<span class="notice-icon">✅</span><div><strong>Order saved to database.</strong> Jhul can see it in the admin panel.</div>';
+      } else {
+        statusEl.className = "notice notice-warning mt-2";
+        statusEl.innerHTML = `<span class="notice-icon">⚠️</span><div><strong>Order NOT saved to database.</strong> ${currentOrder.dbError || "Check Vercel env vars and redeploy."} Invoice still works — message Jhul on Facebook.</div>`;
+      }
+      statusEl.classList.remove("hidden");
+    }
+
     preview.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 

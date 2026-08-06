@@ -1,4 +1,4 @@
-const { getSupabase, isDbConfigured } = require("../../lib/supabase");
+const { getSupabase, isDbConfigured, parseBody, sendJson } = require("../../lib/supabase");
 
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -8,21 +8,22 @@ module.exports = async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
 
   if (!isDbConfigured()) {
-    return res.status(503).json({ error: "Database not configured", fallback: true });
+    return sendJson(res, 503, { error: "Database not configured", fallback: true });
   }
 
   const supabase = getSupabase();
+  const body = await parseBody(req);
 
   if (req.method === "GET") {
-    const type = new URL(req.url, "http://localhost").searchParams.get("type") || "site";
-
+    const type = new URL(req.url || "/", "http://localhost").searchParams.get("type") || "site";
     const table = type === "facebook" ? "facebook_reviews" : "site_reviews";
+
     const { data, error } = await supabase
       .from(table)
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) return sendJson(res, 500, { error: error.message });
 
     const reviews = data.map((r) => ({
       author: r.author,
@@ -33,14 +34,14 @@ module.exports = async function handler(req, res) {
       createdAt: r.created_at,
     }));
 
-    return res.status(200).json(reviews);
+    return sendJson(res, 200, reviews);
   }
 
   if (req.method === "POST") {
-    const { code, author, text, stars } = req.body || {};
+    const { code, author, text, stars } = body;
 
     if (!code || !author || !text || !stars) {
-      return res.status(400).json({ error: "Missing required fields" });
+      return sendJson(res, 400, { error: "Missing required fields" });
     }
 
     const upperCode = code.toUpperCase();
@@ -52,8 +53,8 @@ module.exports = async function handler(req, res) {
       .eq("used", false)
       .maybeSingle();
 
-    if (codeError) return res.status(500).json({ error: codeError.message });
-    if (!codeData) return res.status(404).json({ error: "Invalid or used code" });
+    if (codeError) return sendJson(res, 500, { error: codeError.message });
+    if (!codeData) return sendJson(res, 404, { error: "Invalid or used code" });
 
     const { data: review, error: reviewError } = await supabase
       .from("site_reviews")
@@ -67,19 +68,16 @@ module.exports = async function handler(req, res) {
       .select()
       .single();
 
-    if (reviewError) return res.status(500).json({ error: reviewError.message });
+    if (reviewError) return sendJson(res, 500, { error: reviewError.message });
 
     await supabase
       .from("review_codes")
       .update({ used: true, used_at: new Date().toISOString() })
       .eq("code", upperCode);
 
-    await supabase
-      .from("orders")
-      .update({ status: "reviewed" })
-      .eq("id", codeData.order_id);
+    await supabase.from("orders").update({ status: "reviewed" }).eq("id", codeData.order_id);
 
-    return res.status(201).json({
+    return sendJson(res, 201, {
       author: review.author,
       text: review.text,
       stars: review.stars,
@@ -88,5 +86,5 @@ module.exports = async function handler(req, res) {
     });
   }
 
-  return res.status(405).json({ error: "Method not allowed" });
+  return sendJson(res, 405, { error: "Method not allowed" });
 };

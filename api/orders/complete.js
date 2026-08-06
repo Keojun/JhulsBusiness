@@ -1,4 +1,11 @@
-const { getSupabase, isDbConfigured, checkAdmin, generateReviewCode } = require("../../lib/supabase");
+const {
+  getSupabase,
+  isDbConfigured,
+  checkAdmin,
+  parseBody,
+  sendJson,
+  generateReviewCode,
+} = require("../../lib/supabase");
 
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -6,18 +13,20 @@ module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Admin-Password");
 
   if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
 
   if (!isDbConfigured()) {
-    return res.status(503).json({ error: "Database not configured", fallback: true });
+    return sendJson(res, 503, { error: "Database not configured", fallback: true });
   }
 
-  if (!checkAdmin(req)) {
-    return res.status(401).json({ error: "Unauthorized" });
+  const body = await parseBody(req);
+
+  if (!checkAdmin(req, body)) {
+    return sendJson(res, 401, { error: "Unauthorized" });
   }
 
-  const { orderId } = req.body || {};
-  if (!orderId) return res.status(400).json({ error: "orderId required" });
+  const { orderId } = body;
+  if (!orderId) return sendJson(res, 400, { error: "orderId required" });
 
   const supabase = getSupabase();
   const code = generateReviewCode();
@@ -28,14 +37,14 @@ module.exports = async function handler(req, res) {
     used: false,
   });
 
-  if (codeError) return res.status(500).json({ error: codeError.message });
+  if (codeError) return sendJson(res, 500, { error: codeError.message });
 
   const { error: orderError } = await supabase
     .from("orders")
     .update({ status: "completed", review_code: code })
     .eq("id", orderId);
 
-  if (orderError) return res.status(500).json({ error: orderError.message });
+  if (orderError) return sendJson(res, 500, { error: orderError.message });
 
-  return res.status(200).json({ code, orderId });
+  return sendJson(res, 200, { code, orderId });
 };

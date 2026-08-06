@@ -77,22 +77,40 @@ async function addOrder(order) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(order),
     });
-    if (res.ok) return await res.json();
-  } catch (_) {}
-
-  const orders = getOrdersLocal();
-  orders.push(order);
-  saveOrdersLocal(orders);
-  return order;
+    const data = await res.json();
+    if (res.ok) return { ...data, savedToDb: true };
+    return { ...order, savedToDb: false, dbError: data.error || `HTTP ${res.status}` };
+  } catch (err) {
+    const orders = getOrdersLocal();
+    orders.push(order);
+    saveOrdersLocal(orders);
+    return { ...order, savedToDb: false, dbError: err.message || "Network error" };
+  }
 }
 
 async function getOrders() {
   try {
     const res = await fetch("/api/orders", { headers: adminHeaders() });
     if (res.ok) return await res.json();
-  } catch (_) {}
-
+    if (res.status === 401) throw new Error("Unauthorized — wrong admin password");
+  } catch (err) {
+    if (err.message.includes("Unauthorized")) throw err;
+  }
   return getOrdersLocal();
+}
+
+async function verifyAdminPassword(password) {
+  try {
+    const res = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+    const data = await res.json();
+    return res.ok && data.ok;
+  } catch {
+    return password === "jhul2026";
+  }
 }
 
 async function completeOrderApi(orderId) {
@@ -102,11 +120,12 @@ async function completeOrderApi(orderId) {
       headers: adminHeaders(),
       body: JSON.stringify({ orderId }),
     });
-    if (res.ok) {
-      const data = await res.json();
-      return data.code;
-    }
-  } catch (_) {}
+    const data = await res.json();
+    if (res.ok) return data.code;
+    throw new Error(data.error || "Failed to complete order");
+  } catch (err) {
+    if (err.message && !err.message.includes("Failed")) throw err;
+  }
 
   const code = generateReviewCodeLocal();
   const codes = getReviewCodesLocal();
@@ -170,7 +189,6 @@ async function getSiteReviews() {
     const res = await fetch("/api/reviews?type=site");
     if (res.ok) return await res.json();
   } catch (_) {}
-
   return getSiteReviewsLocal();
 }
 
@@ -186,4 +204,12 @@ async function getFacebookReviews() {
   } catch (_) {}
 
   return [];
+}
+
+async function checkDatabaseHealth() {
+  try {
+    const res = await fetch("/api/health");
+    if (res.ok) return await res.json();
+  } catch (_) {}
+  return { database: "unknown" };
 }
