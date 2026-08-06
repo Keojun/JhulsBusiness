@@ -37,9 +37,133 @@ body {
   color: var(--dark);
   min-height: 100vh;
   line-height: 1.6;
+  position: relative;
+  overflow-x: hidden;
 }
 
-/* ── Header ── */
+/* ── Character Stickers ── */
+.sticker-bg {
+  position: fixed;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+  opacity: 0.12;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
+}
+
+.sticker-bg-1 { width: 180px; bottom: 5%; left: -2%; animation: float-sticker 7s ease-in-out infinite; }
+.sticker-bg-2 { width: 160px; top: 18%; right: -1%; animation: float-sticker 8s ease-in-out infinite 1s; }
+.sticker-bg-3 { width: 140px; bottom: 30%; right: 3%; animation: float-sticker 6s ease-in-out infinite 0.5s; opacity: 0.08; }
+
+.sticker {
+  pointer-events: none;
+  user-select: none;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.15));
+}
+
+.sticker-inline {
+  display: block;
+  object-fit: contain;
+}
+
+.sticker-sm { width: 72px; height: auto; }
+.sticker-md { width: 110px; height: auto; }
+.sticker-lg { width: 150px; height: auto; }
+.sticker-xl { width: 200px; height: auto; }
+
+.sticker-float {
+  animation: float-sticker 4s ease-in-out infinite;
+}
+
+.sticker-tilt-l { transform: rotate(-8deg); }
+.sticker-tilt-r { transform: rotate(8deg); }
+
+@keyframes float-sticker {
+  0%, 100% { transform: translateY(0) rotate(var(--sticker-rotate, 0deg)); }
+  50% { transform: translateY(-10px) rotate(var(--sticker-rotate, 0deg)); }
+}
+
+.hero-with-sticker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  padding: 3rem 1.5rem 2rem;
+}
+
+.hero-content { flex: 1; min-width: 260px; max-width: 560px; text-align: center; }
+
+.notice-with-sticker {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.notice-with-sticker .sticker-sm {
+  flex-shrink: 0;
+}
+
+.card-with-sticker {
+  position: relative;
+  overflow: visible;
+}
+
+.card-sticker {
+  position: absolute;
+  z-index: 2;
+}
+
+.card-sticker-tr { top: -40px; right: -10px; }
+.card-sticker-bl { bottom: -30px; left: -15px; }
+.card-sticker-tl { top: -35px; left: -10px; }
+
+.section-with-sticker {
+  position: relative;
+}
+
+.section-sticker-side {
+  position: absolute;
+  top: 0;
+  z-index: 1;
+}
+
+.section-sticker-side.left { left: -20px; }
+.section-sticker-side.right { right: -20px; }
+
+.modal-sticker-wrap {
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
+.modal-sticker-wrap .sticker-md {
+  margin: 0 auto;
+}
+
+.shop-card .card-sticker-tr {
+  width: 90px;
+  top: -45px;
+  right: 5px;
+}
+
+.site-header,
+.container,
+.hero-with-sticker,
+.site-footer,
+.modal-overlay {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .sticker-bg { display: none; }
+  .section-sticker-side { display: none; }
+  .card-sticker-tr, .card-sticker-bl { width: 70px !important; top: -30px; right: 0; }
+  .hero-with-sticker .sticker-lg { width: 100px; }
+}
+
 .site-header {
   background: linear-gradient(135deg, var(--orange-pastel) 0%, #ffd4b8 50%, var(--orange-light) 100%);
   border-bottom: 3px solid var(--orange-mid);
@@ -172,6 +296,11 @@ body {
 
 /* ── Hero ── */
 .hero {
+  text-align: center;
+  padding: 3rem 1.5rem 2rem;
+}
+
+.hero-with-sticker {
   text-align: center;
   padding: 3rem 1.5rem 2rem;
 }

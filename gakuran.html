@@ -10,6 +10,11 @@
 </head>
 <body>
 
+  <!-- Background floating stickers -->
+  <img src="images/jhul-smile.png" alt="" class="sticker sticker-bg sticker-bg-1" aria-hidden="true" />
+  <img src="images/jhul-happy.png" alt="" class="sticker sticker-bg sticker-bg-2" aria-hidden="true" />
+  <img src="images/jhul-sad.png" alt="" class="sticker sticker-bg sticker-bg-3" aria-hidden="true" />
+
   <!-- Header -->
   <header class="site-header">
     <div class="header-inner">
@@ -32,19 +37,21 @@
 
   <div class="container" style="padding-top:2rem;">
 
-    <div class="notice notice-warning">
-      <span class="notice-icon">⚠️</span>
+    <div class="notice notice-warning notice-with-sticker">
+      <img src="images/jhul-sad.png" alt="" class="sticker sticker-sm sticker-tilt-l" aria-hidden="true" />
       <div>
         <strong>Do not send receipts unexpectedly.</strong>
         The owner must verify your order and payment first before proceeding. Make sure your details are final and accurate — <strong>no refunds</strong>.
       </div>
     </div>
 
-    <section class="order-section section">
+    <section class="order-section section section-with-sticker">
+      <img src="images/jhul-smile.png" alt="Jhul character" class="sticker sticker-lg section-sticker-side right sticker-float" aria-hidden="true" />
       <h1 class="section-title text-center">Gakuran Rerolls</h1>
       <p class="section-subtitle text-center">Fill in your order details below, then click the order button.</p>
 
-      <div class="card">
+      <div class="card card-with-sticker">
+        <img src="images/jhul-happy.png" alt="" class="sticker card-sticker card-sticker-tr sticker-float" style="width:80px;" aria-hidden="true" />
         <form id="order-form">
           <div class="form-group">
             <label for="username">Username</label>
@@ -67,8 +74,10 @@
     </section>
 
     <!-- Leave a Review — hidden until user confirms instructions -->
-    <section class="section hidden" id="leave-review">
-      <div class="card card-green leave-review-card">
+    <section class="section hidden section-with-sticker" id="leave-review">
+      <img src="images/jhul-waving.png" alt="" class="sticker sticker-md section-sticker-side left sticker-float" aria-hidden="true" />
+      <div class="card card-green leave-review-card card-with-sticker">
+        <img src="images/jhul-happy.png" alt="" class="sticker card-sticker card-sticker-tr" style="width:75px;" aria-hidden="true" />
         <h2 class="section-title" style="margin-bottom:0.5rem;">⭐ Leave a Review</h2>
         <p class="section-subtitle" style="margin-bottom:1.25rem;">After Jhul completes your order, he'll send you a review code. Enter it here to leave a verified review.</p>
 
@@ -121,6 +130,9 @@
   <div id="modal-invoice" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-invoice-title">
     <div class="modal-box">
       <button type="button" class="modal-close" data-close="modal-invoice" aria-label="Close">&times;</button>
+      <div class="modal-sticker-wrap">
+        <img src="images/jhul-happy.png" alt="" class="sticker sticker-md sticker-float" aria-hidden="true" />
+      </div>
       <div class="modal-header">
         <h2 id="modal-invoice-title">✅ Order Created!</h2>
         <p>Download your invoice and send it to Jhul on Messenger.</p>
@@ -143,6 +155,9 @@
   <div id="modal-instructions" class="modal-overlay modal-no-close hidden" role="dialog" aria-modal="true" aria-labelledby="modal-instructions-title">
     <div class="modal-box modal-box-lg">
       <div class="modal-header" style="padding-right:0;">
+        <div class="modal-sticker-wrap">
+          <img src="images/jhul-waving.png" alt="" class="sticker sticker-md sticker-float" aria-hidden="true" />
+        </div>
         <h2 id="modal-instructions-title">📋 Next Steps — Read Carefully!</h2>
         <p>Follow these instructions to complete your order.</p>
       </div>
@@ -183,7 +198,9 @@
 
       <div id="instructions-step-2" class="hidden">
         <div class="confirm-panel">
-          <div class="confirm-icon">❓</div>
+          <div class="modal-sticker-wrap">
+            <img src="images/jhul-sad.png" alt="" class="sticker sticker-md" aria-hidden="true" />
+          </div>
           <h3>Are you sure?</h3>
           <p>Please confirm you understand the order process:</p>
           <ul class="confirm-checklist">

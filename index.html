@@ -10,6 +10,11 @@
 </head>
 <body>
 
+  <!-- Background floating stickers -->
+  <img src="images/jhul-happy.png" alt="" class="sticker sticker-bg sticker-bg-1" aria-hidden="true" />
+  <img src="images/jhul-smile.png" alt="" class="sticker sticker-bg sticker-bg-2" aria-hidden="true" />
+  <img src="images/jhul-waving.png" alt="" class="sticker sticker-bg sticker-bg-3" aria-hidden="true" />
+
   <!-- Header -->
   <header class="site-header">
     <div class="header-inner">
@@ -31,20 +36,24 @@
   </header>
 
   <!-- Hero -->
-  <section class="hero">
-    <span class="hero-badge">🎮 Trusted Roblox Services</span>
-    <h1>Welcome to RBXDISC</h1>
-    <p>Your go-to shop for Gakuran rerolls and more — by Jhul Cammayo. Fast, reliable, and verified by happy customers.</p>
-    <div class="hero-cta">
-      <a href="gakuran.html" class="btn btn-primary">Shop Gakuran Rerolls</a>
-      <a href="https://www.facebook.com/jhulcammayo" target="_blank" rel="noopener" class="btn btn-outline">Message on Facebook</a>
+  <section class="hero-with-sticker">
+    <img src="images/jhul-waving.png" alt="Jhul waving" class="sticker sticker-lg sticker-float sticker-tilt-l" style="--sticker-rotate:-6deg;" />
+    <div class="hero-content">
+      <span class="hero-badge">🎮 Trusted Roblox Services</span>
+      <h1>Welcome to RBXDISC</h1>
+      <p>Your go-to shop for Gakuran rerolls and more — by Jhul Cammayo. Fast, reliable, and verified by happy customers.</p>
+      <div class="hero-cta">
+        <a href="gakuran.html" class="btn btn-primary">Shop Gakuran Rerolls</a>
+        <a href="https://www.facebook.com/jhulcammayo" target="_blank" rel="noopener" class="btn btn-outline">Message on Facebook</a>
+      </div>
     </div>
+    <img src="images/jhul-happy.png" alt="Jhul happy" class="sticker sticker-lg sticker-float sticker-tilt-r" style="--sticker-rotate:6deg;animation-delay:0.5s;" />
   </section>
 
   <!-- Important Notice -->
   <div class="container">
-    <div class="notice notice-warning">
-      <span class="notice-icon">⚠️</span>
+    <div class="notice notice-warning notice-with-sticker">
+      <img src="images/jhul-sad.png" alt="" class="sticker sticker-sm sticker-tilt-l" aria-hidden="true" />
       <div>
         <strong>Do not send receipts unexpectedly.</strong>
         The owner needs to verify your order and payment first before you proceed. Please follow the order instructions carefully.
@@ -57,13 +66,15 @@
     <h2 class="section-title">Our Shop</h2>
     <p class="section-subtitle">Browse available services and place your order.</p>
     <div class="grid-2">
-      <div class="card shop-card">
+      <div class="card shop-card card-with-sticker">
+        <img src="images/jhul-smile.png" alt="" class="sticker card-sticker card-sticker-tr sticker-float" aria-hidden="true" />
         <div class="shop-icon">🎴</div>
         <h3>Gakuran Rerolls</h3>
         <p>Order rerolls for Gakuran. Fill in your username and reroll amount, then follow the payment instructions.</p>
         <a href="gakuran.html" class="btn btn-green">Open Gakuran Shop →</a>
       </div>
-      <div class="card card-green shop-card">
+      <div class="card card-green shop-card card-with-sticker">
+        <img src="images/jhul-waving.png" alt="" class="sticker card-sticker card-sticker-tr sticker-float" style="width:85px;" aria-hidden="true" />
         <div class="shop-icon">💬</div>
         <h3>Contact Jhul</h3>
         <p>Have questions? Reach out on Facebook Messenger or join our Telegram group for updates.</p>
@@ -76,7 +87,8 @@
   </section>
 
   <!-- Owner Section -->
-  <section class="container section">
+  <section class="container section section-with-sticker">
+    <img src="images/jhul-happy.png" alt="" class="sticker sticker-md section-sticker-side left sticker-float" aria-hidden="true" />
     <h2 class="section-title text-center">Meet the Owner</h2>
     <p class="section-subtitle text-center">Trusted by the community — connect with Jhul directly.</p>
     <div class="card" style="max-width:420px;margin:0 auto;">
@@ -98,7 +110,8 @@
   </section>
 
   <!-- Reviews from Facebook -->
-  <section class="container section" id="reviews">
+  <section class="container section section-with-sticker" id="reviews">
+    <img src="images/jhul-smile.png" alt="" class="sticker sticker-md section-sticker-side right sticker-float" aria-hidden="true" />
     <h2 class="section-title">Customer Reviews</h2>
     <p class="section-subtitle">
       What our customers say —
