@@ -1,90 +1,91 @@
-const { getSupabase, isDbConfigured, parseBody, sendJson } = require("../../lib/supabase");
+const { isDbConfigured, dbRequest, parseBody, sendJson } = require("../lib/db");
 
 module.exports = async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  try {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === "OPTIONS") return res.status(200).end();
+    if (req.method === "OPTIONS") return res.status(200).end();
 
-  if (!isDbConfigured()) {
-    return sendJson(res, 503, { error: "Database not configured", fallback: true });
-  }
-
-  const supabase = getSupabase();
-  const body = await parseBody(req);
-
-  if (req.method === "GET") {
-    const type = new URL(req.url || "/", "http://localhost").searchParams.get("type") || "site";
-    const table = type === "facebook" ? "facebook_reviews" : "site_reviews";
-
-    const { data, error } = await supabase
-      .from(table)
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) return sendJson(res, 500, { error: error.message });
-
-    const reviews = data.map((r) => ({
-      author: r.author,
-      text: r.text,
-      stars: r.stars,
-      source: r.source,
-      verified: r.verified,
-      createdAt: r.created_at,
-    }));
-
-    return sendJson(res, 200, reviews);
-  }
-
-  if (req.method === "POST") {
-    const { code, author, text, stars } = body;
-
-    if (!code || !author || !text || !stars) {
-      return sendJson(res, 400, { error: "Missing required fields" });
+    if (!isDbConfigured()) {
+      return sendJson(res, 503, { error: "Database not configured", fallback: true });
     }
 
-    const upperCode = code.toUpperCase();
+    const body = await parseBody(req);
 
-    const { data: codeData, error: codeError } = await supabase
-      .from("review_codes")
-      .select("*")
-      .eq("code", upperCode)
-      .eq("used", false)
-      .maybeSingle();
+    if (req.method === "GET") {
+      const type = new URL(req.url || "/", "http://localhost").searchParams.get("type") || "site";
+      const table = type === "facebook" ? "facebook_reviews" : "site_reviews";
 
-    if (codeError) return sendJson(res, 500, { error: codeError.message });
-    if (!codeData) return sendJson(res, 404, { error: "Invalid or used code" });
+      const data = await dbRequest("GET", table, {
+        query: "select=*&order=created_at.desc",
+      });
 
-    const { data: review, error: reviewError } = await supabase
-      .from("site_reviews")
-      .insert({
-        author,
-        text,
-        stars: Number(stars),
-        verified: true,
-        source: "Verified Purchase",
-      })
-      .select()
-      .single();
+      const reviews = (Array.isArray(data) ? data : []).map((r) => ({
+        author: r.author,
+        text: r.text,
+        stars: r.stars,
+        source: r.source,
+        verified: r.verified,
+        createdAt: r.created_at,
+      }));
 
-    if (reviewError) return sendJson(res, 500, { error: reviewError.message });
+      return sendJson(res, 200, reviews);
+    }
 
-    await supabase
-      .from("review_codes")
-      .update({ used: true, used_at: new Date().toISOString() })
-      .eq("code", upperCode);
+    if (req.method === "POST") {
+      const { code, author, text, stars } = body;
 
-    await supabase.from("orders").update({ status: "reviewed" }).eq("id", codeData.order_id);
+      if (!code || !author || !text || !stars) {
+        return sendJson(res, 400, { error: "Missing required fields" });
+      }
 
-    return sendJson(res, 201, {
-      author: review.author,
-      text: review.text,
-      stars: review.stars,
-      source: review.source,
-      verified: review.verified,
-    });
+      const upperCode = code.toUpperCase();
+
+      const codeRows = await dbRequest("GET", "review_codes", {
+        query: `code=eq.${encodeURIComponent(upperCode)}&used=eq.false&select=*`,
+      });
+
+      const codeData = Array.isArray(codeRows) ? codeRows[0] : null;
+      if (!codeData) return sendJson(res, 404, { error: "Invalid or used code" });
+
+      const reviewRows = await dbRequest("POST", "site_reviews", {
+        body: {
+          author,
+          text,
+          stars: Number(stars),
+          verified: true,
+          source: "Verified Purchase",
+        },
+        prefer: "return=representation",
+      });
+
+      const review = Array.isArray(reviewRows) ? reviewRows[0] : reviewRows;
+
+      await dbRequest("PATCH", "review_codes", {
+        query: `code=eq.${encodeURIComponent(upperCode)}`,
+        body: { used: true, used_at: new Date().toISOString() },
+        prefer: "return=minimal",
+      });
+
+      await dbRequest("PATCH", "orders", {
+        query: `id=eq.${encodeURIComponent(codeData.order_id)}`,
+        body: { status: "reviewed" },
+        prefer: "return=minimal",
+      });
+
+      return sendJson(res, 201, {
+        author: review.author,
+        text: review.text,
+        stars: review.stars,
+        source: review.source,
+        verified: review.verified,
+      });
+    }
+
+    return sendJson(res, 405, { error: "Method not allowed" });
+  } catch (err) {
+    return sendJson(res, 500, { error: err.message });
   }
-
-  return sendJson(res, 405, { error: "Method not allowed" });
 };
