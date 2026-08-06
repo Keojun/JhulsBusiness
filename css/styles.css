@@ -972,19 +972,64 @@ body {
   display: none;
 }
 
-#leave-review.highlight-section .card {
+#leave-review {
+  margin-top: 1rem;
+}
+
+#leave-review .leave-review-card {
+  border: 2px solid var(--green-pastel);
+  margin-top: 0;
+}
+
+#leave-review.highlight-section .leave-review-card {
   animation: highlight-pulse 2s ease-out;
   border-color: var(--orange-deep);
 }
 
-@keyframes highlight-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(255, 154, 92, 0.5); }
-  50% { box-shadow: 0 0 0 14px rgba(255, 154, 92, 0); }
-  100% { box-shadow: var(--shadow-green); }
+.order-section {
+  margin-bottom: 2rem;
 }
 
-#leave-review .card {
-  border: 2px solid var(--green-pastel);
+.confirm-panel {
+  text-align: center;
+  padding: 1.25rem;
+  background: linear-gradient(160deg, var(--orange-light), var(--green-light));
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--orange-pastel);
+}
+
+.confirm-panel .confirm-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.confirm-panel h3 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--dark);
+  margin-bottom: 0.5rem;
+}
+
+.confirm-panel > p {
+  color: var(--dark-soft);
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.confirm-checklist {
+  list-style: none;
+  text-align: left;
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+.confirm-checklist li {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.4rem;
+  background: white;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  border-left: 3px solid var(--green-deep);
 }
 
 .fb-embed-wrap {

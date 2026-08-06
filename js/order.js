@@ -34,17 +34,63 @@ function initModals() {
     });
   });
 
-  const continueBtn = document.getElementById("btn-continue-review");
-  if (continueBtn) {
-    continueBtn.addEventListener("click", () => {
+  const continueBtn = document.getElementById("btn-understand");
+  const goBackBtn = document.getElementById("btn-go-back");
+  const confirmBtn = document.getElementById("btn-confirm-sure");
+  const step1 = document.getElementById("instructions-step-1");
+  const step2 = document.getElementById("instructions-step-2");
+
+  function showReviewSection() {
+    sessionStorage.setItem("rbxdisc_review_unlocked", "1");
+    const reviewSection = document.getElementById("leave-review");
+    const navLink = document.getElementById("nav-leave-review");
+    if (reviewSection) {
+      reviewSection.classList.remove("hidden");
       closeModal("modal-instructions");
-      const reviewSection = document.getElementById("leave-review");
-      if (reviewSection) {
+      setTimeout(() => {
         reviewSection.scrollIntoView({ behavior: "smooth", block: "start" });
         reviewSection.classList.add("highlight-section");
         setTimeout(() => reviewSection.classList.remove("highlight-section"), 2000);
+      }, 300);
+    }
+    if (navLink) navLink.classList.remove("hidden");
+  }
+
+  if (sessionStorage.getItem("rbxdisc_review_unlocked") === "1") {
+    const reviewSection = document.getElementById("leave-review");
+    const navLink = document.getElementById("nav-leave-review");
+    if (reviewSection) reviewSection.classList.remove("hidden");
+    if (navLink) navLink.classList.remove("hidden");
+  }
+
+  if (continueBtn && step1 && step2) {
+    continueBtn.addEventListener("click", () => {
+      step1.classList.add("hidden");
+      step2.classList.remove("hidden");
+    });
+  }
+
+  if (goBackBtn && step1 && step2) {
+    goBackBtn.addEventListener("click", () => {
+      step2.classList.add("hidden");
+      step1.classList.remove("hidden");
+    });
+  }
+
+  if (confirmBtn) {
+    confirmBtn.addEventListener("click", showReviewSection);
+  }
+
+  /* Reset instruction steps when instructions modal opens */
+  const instructionsModal = document.getElementById("modal-instructions");
+  if (instructionsModal) {
+    const observer = new MutationObserver(() => {
+      if (!instructionsModal.classList.contains("hidden") && step1 && step2) {
+        step1.classList.remove("hidden");
+        step2.classList.add("hidden");
       }
     });
+    observer.observe(instructionsModal, { attributes: true, attributeFilter: ["class"] });
   }
 }
 

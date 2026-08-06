@@ -23,7 +23,7 @@
       <nav class="nav-links">
         <a href="index.html">Home</a>
         <a href="gakuran.html" class="active">Gakuran Shop</a>
-        <a href="#leave-review">Leave Review</a>
+        <a href="#leave-review" id="nav-leave-review" class="hidden">Leave Review</a>
         <a href="https://www.facebook.com/jhulcammayo" target="_blank" rel="noopener" class="social-pill fb">Facebook</a>
         <a href="https://t.me/+zT-UnUY2CDUzNDU1" target="_blank" rel="noopener" class="social-pill tg">Telegram</a>
       </nav>
@@ -66,11 +66,11 @@
       </div>
     </section>
 
-    <!-- Leave a Review — always visible on page -->
-    <section class="section" id="leave-review">
-      <div class="card card-green">
-        <h2 class="section-title">⭐ Leave a Review</h2>
-        <p class="section-subtitle">After Jhul completes your order, he'll send you a review code. Enter it here to leave a verified review.</p>
+    <!-- Leave a Review — hidden until user confirms instructions -->
+    <section class="section hidden" id="leave-review">
+      <div class="card card-green leave-review-card">
+        <h2 class="section-title" style="margin-bottom:0.5rem;">⭐ Leave a Review</h2>
+        <p class="section-subtitle" style="margin-bottom:1.25rem;">After Jhul completes your order, he'll send you a review code. Enter it here to leave a verified review.</p>
 
         <div id="review-locked">
           <form id="unlock-review-form" style="max-width:400px;margin:0 auto;">
@@ -147,37 +147,62 @@
         <p>Follow these instructions to complete your order.</p>
       </div>
 
-      <div class="instructions-panel modal-instructions-compact" style="padding:1.25rem;margin-bottom:0;">
-        <p class="instructions-intro">Complete all steps in order!</p>
-        <ol class="instructions-list">
-          <li>
-            <span><strong>Step 1:</strong> Message Jhul on Facebook Messenger and <strong>send the invoice image</strong> you just downloaded.
-              <br><a href="https://www.facebook.com/jhulcammayo" target="_blank" rel="noopener" style="color:var(--orange-deep);font-weight:600;">→ facebook.com/jhulcammayo</a>
-            </span>
-          </li>
-          <li>
-            <span><strong>Step 2:</strong> <strong>Wait for Jhul</strong> to verify your order and send you the QR code. ⚠️ Do not send payment receipts before verification!</span>
-          </li>
-          <li>
-            <span><strong>Step 3:</strong> After Jhul confirms, <strong>send your payment</strong> using the QR code provided.</span>
-          </li>
-          <li>
-            <span><strong>Step 4:</strong> <strong>Wait for your Private Server link</strong> and your rerolls to be completed!</span>
-          </li>
-          <li>
-            <span><strong>Step 5:</strong> After your order is done, Jhul will send you a <strong>review code</strong>. Scroll down on this page to enter it and leave a review!</span>
-          </li>
-        </ol>
+      <div id="instructions-step-1">
+        <div class="instructions-panel modal-instructions-compact" style="padding:1.25rem;margin-bottom:0;">
+          <p class="instructions-intro">Complete all steps in order!</p>
+          <ol class="instructions-list">
+            <li>
+              <span><strong>Step 1:</strong> Message Jhul on Facebook Messenger and <strong>send the invoice image</strong> you just downloaded.
+                <br><a href="https://www.facebook.com/jhulcammayo" target="_blank" rel="noopener" style="color:var(--orange-deep);font-weight:600;">→ facebook.com/jhulcammayo</a>
+              </span>
+            </li>
+            <li>
+              <span><strong>Step 2:</strong> <strong>Wait for Jhul</strong> to verify your order and send you the QR code. ⚠️ Do not send payment receipts before verification!</span>
+            </li>
+            <li>
+              <span><strong>Step 3:</strong> After Jhul confirms, <strong>send your payment</strong> using the QR code provided.</span>
+            </li>
+            <li>
+              <span><strong>Step 4:</strong> <strong>Wait for your Private Server link</strong> and your rerolls to be completed!</span>
+            </li>
+            <li>
+              <span><strong>Step 5:</strong> After your order is done, Jhul will send you a <strong>review code</strong> to leave a verified review.</span>
+            </li>
+          </ol>
 
-        <div class="notice notice-warning mt-2" style="margin-bottom:0;">
-          <span class="notice-icon">⚠️</span>
-          <div><strong>No refunds.</strong> Make sure your details are final and accurate.</div>
+          <div class="notice notice-warning mt-2" style="margin-bottom:0;">
+            <span class="notice-icon">⚠️</span>
+            <div><strong>No refunds.</strong> Make sure your details are final and accurate.</div>
+          </div>
         </div>
+
+        <button type="button" id="btn-understand" class="btn btn-primary" style="width:100%;margin-top:1.25rem;padding:1rem;font-size:1.05rem;">
+          ✓ I Understand
+        </button>
       </div>
 
-      <button type="button" id="btn-continue-review" class="btn btn-primary" style="width:100%;margin-top:1.25rem;padding:1rem;font-size:1.05rem;">
-        ✓ I Understand — Go to Review Section ↓
-      </button>
+      <div id="instructions-step-2" class="hidden">
+        <div class="confirm-panel">
+          <div class="confirm-icon">❓</div>
+          <h3>Are you sure?</h3>
+          <p>Please confirm you understand the order process:</p>
+          <ul class="confirm-checklist">
+            <li>Send the invoice to Jhul on Messenger first</li>
+            <li>Wait for verification before paying</li>
+            <li>Do <strong>not</strong> send receipts unexpectedly</li>
+            <li>All details are final — <strong>no refunds</strong></li>
+          </ul>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;margin-top:1.25rem;flex-wrap:wrap;">
+          <button type="button" id="btn-go-back" class="btn btn-outline" style="flex:1;min-width:140px;">
+            ← Read Again
+          </button>
+          <button type="button" id="btn-confirm-sure" class="btn btn-green" style="flex:1;min-width:140px;padding:1rem;font-weight:700;">
+            Yes, I'm Sure ✓
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
