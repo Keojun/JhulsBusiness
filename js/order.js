@@ -1,6 +1,39 @@
 /**
- * Generates a downloadable order invoice image using Canvas.
+ * Order form, invoice generation, and modal flow.
  */
+
+function openModal(id) {
+  const modal = document.getElementById(id);
+  if (modal) {
+    modal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+  }
+}
+
+function closeModal(id) {
+  const modal = document.getElementById(id);
+  if (modal) {
+    modal.classList.add("hidden");
+    document.body.style.overflow = "";
+  }
+}
+
+window.openModal = openModal;
+window.closeModal = closeModal;
+
+function initModals() {
+  document.querySelectorAll(".modal-close").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      closeModal(btn.dataset.close);
+    });
+  });
+
+  document.querySelectorAll(".modal-overlay").forEach((overlay) => {
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) closeModal(overlay.id);
+    });
+  });
+}
 
 function drawInvoice(order) {
   const canvas = document.getElementById("invoice-canvas");
@@ -117,14 +150,13 @@ function downloadInvoice(order) {
   if (!canvas) return;
 
   const link = document.createElement("a");
-  link.download = `jhul-order-${order.id}.png`;
+  link.download = `rbxdisc-order-${order.id}.png`;
   link.href = canvas.toDataURL("image/png");
   link.click();
 }
 
 function initOrderForm() {
   const form = document.getElementById("order-form");
-  const preview = document.getElementById("invoice-preview");
   const downloadBtn = document.getElementById("download-invoice");
   const orderImgBtn = document.getElementById("order-img-btn");
 
@@ -162,40 +194,42 @@ function initOrderForm() {
 
     currentOrder = await addOrder(orderData);
     drawInvoice(currentOrder);
-    preview.classList.add("visible");
 
     const statusEl = document.getElementById("order-save-status");
     if (statusEl) {
       if (currentOrder.savedToDb) {
-        statusEl.className = "notice notice-info mt-2";
-        statusEl.innerHTML = '<span class="notice-icon">✅</span><div><strong>Order saved to database.</strong> Jhul can see it in the admin panel.</div>';
+        statusEl.className = "notice notice-info";
+        statusEl.innerHTML = '<span class="notice-icon">✅</span><div><strong>Order saved!</strong> Jhul can see it in admin.</div>';
       } else {
-        statusEl.className = "notice notice-warning mt-2";
-        statusEl.innerHTML = `<span class="notice-icon">⚠️</span><div><strong>Order NOT saved to database.</strong> ${currentOrder.dbError || "Check Vercel env vars and redeploy."} Invoice still works — message Jhul on Facebook.</div>`;
+        statusEl.className = "notice notice-warning";
+        statusEl.innerHTML = `<span class="notice-icon">⚠️</span><div><strong>Order saved locally.</strong> ${currentOrder.dbError || ""} Still send invoice to Jhul on Facebook.</div>`;
       }
       statusEl.classList.remove("hidden");
     }
 
-    preview.scrollIntoView({ behavior: "smooth", block: "start" });
+    openModal("modal-invoice");
   }
 
   form.addEventListener("submit", submitOrder);
 
   if (orderImgBtn) {
     orderImgBtn.addEventListener("click", () => {
-      if (currentOrder) {
-        downloadInvoice(currentOrder);
-        return;
-      }
       form.requestSubmit();
     });
   }
 
   if (downloadBtn) {
     downloadBtn.addEventListener("click", () => {
-      if (currentOrder) downloadInvoice(currentOrder);
+      if (!currentOrder) return;
+
+      downloadInvoice(currentOrder);
+      closeModal("modal-invoice");
+      openModal("modal-instructions");
     });
   }
 }
 
-document.addEventListener("DOMContentLoaded", initOrderForm);
+document.addEventListener("DOMContentLoaded", () => {
+  initModals();
+  initOrderForm();
+});

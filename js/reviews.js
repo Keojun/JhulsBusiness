@@ -133,6 +133,7 @@ function initReviewForm() {
       activeCode = null;
 
       loadSiteReviews("site-reviews-grid");
+      if (window.closeModal) window.closeModal("modal-instructions");
     });
   }
 
@@ -140,7 +141,6 @@ function initReviewForm() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  loadFacebookReviews("fb-reviews-grid");
   loadSiteReviews("site-reviews-grid");
   initReviewForm();
 });

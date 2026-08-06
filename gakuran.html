@@ -32,7 +32,6 @@
 
   <div class="container" style="padding-top:2rem;">
 
-    <!-- Notice -->
     <div class="notice notice-warning">
       <span class="notice-icon">⚠️</span>
       <div>
@@ -41,7 +40,6 @@
       </div>
     </div>
 
-    <!-- Order Form -->
     <section class="order-section section">
       <h1 class="section-title text-center">Gakuran Rerolls</h1>
       <p class="section-subtitle text-center">Fill in your order details below, then click the order button.</p>
@@ -66,83 +64,91 @@
           </div>
         </form>
       </div>
-
-      <!-- Invoice Preview -->
-      <div id="invoice-preview" class="invoice-preview">
-        <div class="invoice-reveal-banner">
-          <h2>✅ Order Created!</h2>
-          <p>Save your invoice below and follow the steps to complete your order.</p>
-        </div>
-
-        <div id="order-save-status" class="hidden"></div>
-
-        <div class="invoice-canvas-wrap">
-          <span class="invoice-label">Your Order Invoice</span>
-          <canvas id="invoice-canvas"></canvas>
-        </div>
-
-        <button type="button" id="download-invoice" class="btn btn-primary download-btn">
-          ⬇ Download Invoice & Send to Jhul
-        </button>
-
-        <!-- Payment Instructions -->
-        <div class="instructions-panel">
-          <h3>📋 Follow These Steps</h3>
-          <p class="instructions-intro">Complete all steps in order — do not skip ahead!</p>
-          <ol class="instructions-list">
-            <li>
-              <span><strong>Step 1:</strong> Message Jhul on Facebook Messenger and <strong>send the invoice image</strong> you downloaded above.
-                <br><a href="https://www.facebook.com/jhulcammayo" target="_blank" rel="noopener" style="color:var(--orange-deep);font-weight:600;">→ facebook.com/jhulcammayo</a>
-              </span>
-            </li>
-            <li>
-              <span><strong>Step 2:</strong> <strong>Wait for Jhul</strong> to verify your order and send you the QR code. ⚠️ Do not send payment receipts before verification!</span>
-            </li>
-            <li>
-              <span><strong>Step 3:</strong> After Jhul confirms, <strong>send your payment</strong> using the QR code or payment method provided.</span>
-            </li>
-            <li>
-              <span><strong>Step 4:</strong> <strong>Wait for your Private Server link</strong> from Jhul, join the server, and wait for your rerolls to be completed!</span>
-            </li>
-          </ol>
-
-          <div class="notice notice-warning mt-2" style="margin-bottom:0;">
-            <span class="notice-icon">⚠️</span>
-            <div>
-              <strong>Important:</strong> Make sure your details are final and accurate. <strong>No refunds.</strong>
-            </div>
-          </div>
-        </div>
-      </div>
     </section>
 
-    <!-- Verified Reviews Section -->
+    <!-- Verified Reviews display -->
     <section class="section review-form-section" id="reviews">
       <h2 class="section-title">Verified Customer Reviews</h2>
-      <p class="section-subtitle">Only customers who completed a transaction can leave a review here.</p>
-
-      <!-- Site reviews display -->
+      <p class="section-subtitle">Reviews from customers who completed their order.</p>
       <div class="reviews-grid mb-2" id="site-reviews-grid"></div>
+    </section>
 
-      <!-- Review unlock -->
-      <div id="review-locked" class="review-locked">
-        <h3 style="margin-bottom:0.5rem;">Leave a Review</h3>
-        <p style="color:var(--dark-soft);margin-bottom:1.25rem;font-size:0.95rem;">
-          Enter the review code Jhul sent you after your order was completed.
-        </p>
-        <form id="unlock-review-form" style="max-width:360px;margin:0 auto;">
-          <div class="form-group">
-            <label for="review-code">Review Code</label>
-            <input type="text" id="review-code" placeholder="e.g. JHUL-ABC123" required autocomplete="off" style="text-transform:uppercase;" />
-          </div>
-          <button type="submit" class="btn btn-green" style="width:100%;">Unlock Review Form</button>
-        </form>
+  </div>
+
+  <!-- Modal 1: Invoice Download -->
+  <div id="modal-invoice" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-invoice-title">
+    <div class="modal-box">
+      <button type="button" class="modal-close" data-close="modal-invoice" aria-label="Close">&times;</button>
+      <div class="modal-header">
+        <h2 id="modal-invoice-title">✅ Order Created!</h2>
+        <p>Download your invoice and send it to Jhul on Messenger.</p>
       </div>
 
-      <!-- Review form (hidden until unlocked) -->
-      <div id="review-unlocked" class="hidden">
-        <div class="card" style="max-width:520px;margin:0 auto;">
-          <h3 style="margin-bottom:1rem;">Write Your Review</h3>
+      <div id="order-save-status" class="hidden"></div>
+
+      <div class="modal-invoice-wrap">
+        <span class="invoice-label">Your Order Invoice</span>
+        <canvas id="invoice-canvas"></canvas>
+      </div>
+
+      <button type="button" id="download-invoice" class="btn btn-primary download-btn">
+        ⬇ Download Invoice
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal 2: Instructions + Review Code -->
+  <div id="modal-instructions" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-instructions-title">
+    <div class="modal-box modal-box-lg">
+      <button type="button" class="modal-close" data-close="modal-instructions" aria-label="Close">&times;</button>
+      <div class="modal-header">
+        <h2 id="modal-instructions-title">📋 Next Steps</h2>
+        <p>Follow these instructions to complete your order.</p>
+      </div>
+
+      <div class="instructions-panel modal-instructions-compact" style="padding:1.25rem;margin-bottom:0;">
+        <p class="instructions-intro">Complete all steps in order!</p>
+        <ol class="instructions-list">
+          <li>
+            <span><strong>Step 1:</strong> Message Jhul on Facebook Messenger and <strong>send the invoice image</strong> you just downloaded.
+              <br><a href="https://www.facebook.com/jhulcammayo" target="_blank" rel="noopener" style="color:var(--orange-deep);font-weight:600;">→ facebook.com/jhulcammayo</a>
+            </span>
+          </li>
+          <li>
+            <span><strong>Step 2:</strong> <strong>Wait for Jhul</strong> to verify your order and send you the QR code. ⚠️ Do not send payment receipts before verification!</span>
+          </li>
+          <li>
+            <span><strong>Step 3:</strong> After Jhul confirms, <strong>send your payment</strong> using the QR code provided.</span>
+          </li>
+          <li>
+            <span><strong>Step 4:</strong> <strong>Wait for your Private Server link</strong> and your rerolls to be completed!</span>
+          </li>
+        </ol>
+
+        <div class="notice notice-warning mt-2" style="margin-bottom:0;">
+          <span class="notice-icon">⚠️</span>
+          <div><strong>No refunds.</strong> Make sure your details are final and accurate.</div>
+        </div>
+      </div>
+
+      <hr class="modal-divider" />
+
+      <!-- Review code section -->
+      <div class="modal-review-section">
+        <div id="review-locked">
+          <h4>⭐ Leave a Review (After Order Complete)</h4>
+          <p>Once Jhul finishes your order, he'll send you a review code. Enter it below to leave a verified review.</p>
+          <form id="unlock-review-form">
+            <div class="form-group" style="margin-bottom:0.75rem;">
+              <label for="review-code">Review Code from Jhul</label>
+              <input type="text" id="review-code" placeholder="e.g. JHUL-ABC123" required autocomplete="off" style="text-transform:uppercase;" />
+            </div>
+            <button type="submit" class="btn btn-green" style="width:100%;">Unlock Review Form</button>
+          </form>
+        </div>
+
+        <div id="review-unlocked" class="hidden">
+          <h4>Write Your Review</h4>
           <form id="review-form">
             <div class="form-group">
               <label>Rating</label>
@@ -166,11 +172,9 @@
           </form>
         </div>
       </div>
-    </section>
-
+    </div>
   </div>
 
-  <!-- Footer -->
   <footer class="site-footer">
     <div class="footer-links">
       <a href="index.html">Home</a>
