@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gakuran Rerolls — Jhul's Business</title>
-  <meta name="description" content="Order Gakuran rerolls. Fill in your details, get your order invoice, and follow payment instructions." />
+  <title>Gakuran Rerolls — RBXDISC</title>
+  <meta name="description" content="Order Gakuran rerolls from RBXDISC by Jhul Cammayo." />
   <link rel="icon" href="images/jhul-logo.png" type="image/png" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
@@ -14,8 +14,11 @@
   <header class="site-header">
     <div class="header-inner">
       <a href="index.html" class="logo-link">
-        <img src="images/jhul-logo.png" alt="Jhul Logo" class="logo-img" />
-        <span class="logo-text">Jhul's Business</span>
+        <img src="images/jhul-logo.png" alt="RBXDISC Logo" class="logo-img" />
+        <span class="logo-text-wrap">
+          <span class="logo-text">RBXDISC</span>
+          <span class="logo-sub">by Jhul Cammayo</span>
+        </span>
       </a>
       <nav class="nav-links">
         <a href="index.html">Home</a>
@@ -55,53 +58,58 @@
           </div>
 
           <div class="text-center mt-2">
-            <button type="button" class="order-img-btn" id="order-img-btn" aria-label="Place order">
-              <img src="images/drop-order-button.png" alt="Open drop orders!" />
+            <button type="button" class="btn btn-order" id="order-img-btn" aria-label="Place order">
+              🐸 Place Order
             </button>
             <button type="submit" class="hidden" id="order-submit-hidden" aria-hidden="true">Submit</button>
-            <p style="font-size:0.85rem;color:var(--dark-soft);margin-top:0.75rem;">Click to generate your order invoice</p>
+            <p style="font-size:0.9rem;color:var(--dark-soft);margin-top:0.85rem;font-weight:500;">Fill in your details above, then click to generate your invoice</p>
           </div>
         </form>
       </div>
 
       <!-- Invoice Preview -->
       <div id="invoice-preview" class="invoice-preview">
+        <div class="invoice-reveal-banner">
+          <h2>✅ Order Created!</h2>
+          <p>Save your invoice below and follow the steps to complete your order.</p>
+        </div>
+
         <div id="order-save-status" class="hidden"></div>
-        <h2 class="section-title" style="font-size:1.35rem;">Your Order Invoice</h2>
-        <p class="section-subtitle">Save this image and send it to Jhul on Messenger.</p>
 
         <div class="invoice-canvas-wrap">
+          <span class="invoice-label">Your Order Invoice</span>
           <canvas id="invoice-canvas"></canvas>
         </div>
 
         <button type="button" id="download-invoice" class="btn btn-primary download-btn">
-          ⬇ Download Invoice Image
+          ⬇ Download Invoice & Send to Jhul
         </button>
 
         <!-- Payment Instructions -->
-        <div class="card card-green">
-          <h3 style="margin-bottom:1rem;font-size:1.15rem;">📋 Order Instructions</h3>
+        <div class="instructions-panel">
+          <h3>📋 Follow These Steps</h3>
+          <p class="instructions-intro">Complete all steps in order — do not skip ahead!</p>
           <ol class="instructions-list">
             <li>
-              <span><strong>Message the owner</strong> on Facebook Messenger and send the provided invoice image to Jhul.
-                <br><a href="https://www.facebook.com/jhulcammayo" target="_blank" rel="noopener" style="color:var(--orange-deep);">facebook.com/jhulcammayo</a>
+              <span><strong>Step 1:</strong> Message Jhul on Facebook Messenger and <strong>send the invoice image</strong> you downloaded above.
+                <br><a href="https://www.facebook.com/jhulcammayo" target="_blank" rel="noopener" style="color:var(--orange-deep);font-weight:600;">→ facebook.com/jhulcammayo</a>
               </span>
             </li>
             <li>
-              <span><strong>Wait for the owner</strong> to verify your order and give you the QR code for payment. Do not send payment receipts before verification.</span>
+              <span><strong>Step 2:</strong> <strong>Wait for Jhul</strong> to verify your order and send you the QR code. ⚠️ Do not send payment receipts before verification!</span>
             </li>
             <li>
-              <span>After the owner notifies you, <strong>send your payment</strong> through the provided QR code / payment method.</span>
+              <span><strong>Step 3:</strong> After Jhul confirms, <strong>send your payment</strong> using the QR code or payment method provided.</span>
             </li>
             <li>
-              <span><strong>Wait for the owner</strong> to give you the Private Server link to join, then wait for your rerolls to be completed.</span>
+              <span><strong>Step 4:</strong> <strong>Wait for your Private Server link</strong> from Jhul, join the server, and wait for your rerolls to be completed!</span>
             </li>
           </ol>
 
-          <div class="notice notice-info mt-2" style="margin-bottom:0;">
-            <span class="notice-icon">ℹ️</span>
+          <div class="notice notice-warning mt-2" style="margin-bottom:0;">
+            <span class="notice-icon">⚠️</span>
             <div>
-              <strong>Note:</strong> Make sure the provided details are final and accurate. <strong>No refunds.</strong>
+              <strong>Important:</strong> Make sure your details are final and accurate. <strong>No refunds.</strong>
             </div>
           </div>
         </div>
@@ -170,7 +178,8 @@
       <a href="https://www.facebook.com/jhulcammayo" target="_blank" rel="noopener">Facebook</a>
       <a href="https://t.me/+zT-UnUY2CDUzNDU1" target="_blank" rel="noopener">Telegram</a>
     </div>
-    <p class="footer-copy">© 2026 Jhul's Business. All rights reserved.</p>
+    <p class="footer-copy">© 2026 RBXDISC — by Jhul Cammayo. All rights reserved.</p>
+    <p class="footer-dev">Website developed by <strong>Ken Eubert Lorica</strong></p>
   </footer>
 
   <script src="js/storage.js"></script>

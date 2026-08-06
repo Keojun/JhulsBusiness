@@ -27,9 +27,9 @@ function drawInvoice(order) {
   ctx.fillStyle = "#ffffff";
   ctx.font = "bold 28px Segoe UI, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("JHUL'S ORDER", W / 2, 38);
+  ctx.fillText("RBXDISC ORDER", W / 2, 38);
   ctx.font = "14px Segoe UI, sans-serif";
-  ctx.fillText("Gakuran Rerolls", W / 2, 62);
+  ctx.fillText("by Jhul Cammayo — Gakuran Rerolls", W / 2, 62);
 
   ctx.fillStyle = "rgba(255,255,255,0.9)";
   roundRect(ctx, 30, 100, W - 60, 50, 10);
