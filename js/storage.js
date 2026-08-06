@@ -195,7 +195,10 @@ async function getSiteReviews() {
 async function getFacebookReviews() {
   try {
     const res = await fetch("/api/reviews?type=facebook");
-    if (res.ok) return await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
   } catch (_) {}
 
   try {

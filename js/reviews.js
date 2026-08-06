@@ -140,6 +140,7 @@ function initReviewForm() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  loadFacebookReviews("fb-reviews-grid");
   loadSiteReviews("site-reviews-grid");
   initReviewForm();
 });

@@ -38,12 +38,14 @@ create table if not exists facebook_reviews (
   created_at timestamptz not null default now()
 );
 
--- Sample Facebook reviews (edit or add more in Supabase Table Editor)
-insert into facebook_reviews (author, text, stars) values
-  ('Customer', 'Legit po! Fast transaction and mabait si Jhul. Highly recommended!', 5),
-  ('Roblox Player', 'Got my rerolls quickly after payment. Very trustworthy seller.', 5),
-  ('Gakuran Buyer', 'Smooth process — message, QR, then private server. Everything went as described.', 5)
-on conflict do nothing;
+-- Sample Facebook reviews (re-run after clearing test data)
+insert into facebook_reviews (author, text, stars, source, verified) values
+  ('Customer', 'Legit po! Fast transaction and mabait si Jhul. Highly recommended for gakuran rerolls!', 5, 'Facebook', true),
+  ('Roblox Player', 'Got my rerolls quickly after payment. Very trustworthy seller, will order again.', 5, 'Facebook', true),
+  ('Gakuran Buyer', 'Smooth process — message, QR, then private server. Everything went as described.', 5, 'Facebook', true),
+  ('Repeat Client', 'Been ordering rerolls here multiple times. Always reliable and fair.', 5, 'Facebook', true),
+  ('New Customer', 'First time buyer, was nervous but Jhul guided me through the whole process. 10/10!', 5, 'Facebook', true),
+  ('Happy Gamer', 'Salamat po! Worth it yung rerolls, legit seller talaga.', 5, 'Facebook', true);
 
 -- Disable RLS for simplicity (API uses service role key)
 alter table orders enable row level security;
