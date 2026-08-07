@@ -10,6 +10,11 @@ const customerMessageCache = new Map();
 let customerConvFingerprint = "";
 let lastCustomerTotalUnread = null;
 
+function orderLinkedConversations(convs) {
+  if (!Array.isArray(convs)) return [];
+  return convs.filter((c) => c.orderId);
+}
+
 function resetCustomerChatState() {
   closeChatPanel();
   activeConversationId = null;
@@ -224,7 +229,8 @@ async function loadConversations() {
   listEl.innerHTML = '<p class="chat-loading">Loading chats…</p>';
 
   try {
-    const convs = await getConversations();
+    const allConvs = await getConversations();
+    const convs = orderLinkedConversations(allConvs);
     customerConvFingerprint = convListFingerprint(convs);
 
     if (convs.length === 0) {
@@ -324,12 +330,16 @@ async function loadMessages(conversationId, options = {}) {
 
   try {
     if (!options.silent) {
-      const convs = await getConversations();
+      const convs = orderLinkedConversations(await getConversations());
       const conv = convs.find((c) => c.id === conversationId);
       if (headerEl && conv) {
         headerEl.textContent = conv.orderId
           ? `Order ${conv.orderId} · ${conv.rerollAmount ? conv.rerollAmount + " rerolls" : conv.subject}`
           : conv.subject;
+      } else if (!conv && headerEl) {
+        headerEl.textContent = "Choose an order";
+        await showOrderPickerState();
+        return;
       }
     }
 
@@ -363,7 +373,7 @@ async function refreshCustomerChatLive() {
   if (document.hidden) return;
 
   try {
-    const convs = await getConversations();
+    const convs = orderLinkedConversations(await getConversations());
     applyCustomerUnreadState(convs, { notify: false });
 
     const fingerprint = convListFingerprint(convs);
@@ -415,7 +425,7 @@ async function refreshCustomerNotifications() {
   if (!document.getElementById("chat-panel")?.classList.contains("hidden")) return;
 
   try {
-    const convs = await getConversations();
+    const convs = orderLinkedConversations(await getConversations());
     applyCustomerUnreadState(convs, { notify: true });
     customerConvFingerprint = convListFingerprint(convs);
   } catch (_) {}
@@ -477,7 +487,7 @@ async function sendCustomerMessage() {
 
 async function openOrderChat(order) {
   try {
-    const convs = await getConversations();
+    const convs = orderLinkedConversations(await getConversations());
     let conv = convs.find((c) => c.orderId === order.id);
     if (!conv) {
       conv = await createConversation(`Order ${order.id}`, order.id);
