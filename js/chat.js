@@ -1,5 +1,5 @@
 /**
- * Customer chat with Jhul — slide-out panel on Gakuran page
+ * Customer chat with Jhul — slide-out panel + floating bubble on Gakuran page
  */
 
 let activeConversationId = null;
@@ -8,12 +8,16 @@ let pendingOrderForChat = null;
 
 function initChat() {
   const openBtn = document.getElementById("btn-open-chat");
+  const headerChatBtn = document.getElementById("btn-header-chat");
+  const fab = document.getElementById("chat-fab");
   const closeBtn = document.getElementById("btn-close-chat");
   const panel = document.getElementById("chat-panel");
   const form = document.getElementById("chat-form");
   const newChatBtn = document.getElementById("btn-new-chat");
 
   openBtn?.addEventListener("click", () => openChatPanel());
+  headerChatBtn?.addEventListener("click", () => openChatPanel(pendingOrderForChat || null));
+  fab?.addEventListener("click", () => openChatPanel(pendingOrderForChat || null));
   closeBtn?.addEventListener("click", () => closeChatPanel());
 
   form?.addEventListener("submit", async (e) => {
@@ -24,9 +28,12 @@ function initChat() {
   newChatBtn?.addEventListener("click", () => startNewConversation());
 
   document.addEventListener("rbxdisc:auth", (e) => {
-    if (!e.detail.customer) {
+    if (e.detail.customer) {
+      showChatFab(false);
+    } else {
       closeChatPanel();
       activeConversationId = null;
+      hideChatFab();
     }
   });
 
@@ -37,14 +44,37 @@ function initChat() {
   });
 }
 
+function showChatFab(pulse = false) {
+  const wrap = document.getElementById("chat-fab-wrap");
+  const fab = document.getElementById("chat-fab");
+  const hint = document.getElementById("chat-fab-hint");
+  if (!wrap || !fab) return;
+
+  wrap.classList.remove("hidden");
+  document.body.classList.add("has-chat-fab");
+  fab.classList.toggle("pulse", pulse);
+  if (pulse && hint) hint.classList.remove("hidden");
+}
+
+function hideChatFabHint() {
+  document.getElementById("chat-fab-hint")?.classList.add("hidden");
+  document.getElementById("chat-fab")?.classList.remove("pulse");
+}
+
+function hideChatFab() {
+  document.getElementById("chat-fab-wrap")?.classList.add("hidden");
+  document.body.classList.remove("has-chat-fab");
+  hideChatFabHint();
+}
+
 function openChatPanel(orderContext = null) {
   getCurrentCustomer().then(async (c) => {
     if (!c) {
       window.location.replace("/login?redirect=" + encodeURIComponent("/gakuran"));
       return;
     }
-    }
 
+    hideChatFabHint();
     document.getElementById("chat-panel")?.classList.remove("hidden");
     document.body.classList.add("chat-open");
 
@@ -62,6 +92,10 @@ function closeChatPanel() {
   document.getElementById("chat-panel")?.classList.add("hidden");
   document.body.classList.remove("chat-open");
   stopPolling();
+
+  getCurrentCustomer().then((c) => {
+    if (c && document.getElementById("chat-fab-wrap")) showChatFab(false);
+  });
 }
 
 async function loadConversations() {
@@ -218,6 +252,7 @@ function setPendingOrderForChat(order) {
   pendingOrderForChat = order;
   const btn = document.getElementById("btn-message-jhul-order");
   if (btn) btn.classList.remove("hidden");
+  showChatFab(true);
 }
 
 function startPolling() {
@@ -245,5 +280,6 @@ function escapeHtml(str) {
 
 window.openChatPanel = openChatPanel;
 window.setPendingOrderForChat = setPendingOrderForChat;
+window.showChatFab = showChatFab;
 
 document.addEventListener("DOMContentLoaded", initChat);

@@ -25,6 +25,11 @@ async function initAuthNav() {
   const chatBtn = document.getElementById("btn-open-chat");
   if (chatBtn) chatBtn.classList.remove("hidden");
 
+  const headerChatBtn = document.getElementById("btn-header-chat");
+  if (headerChatBtn) headerChatBtn.classList.remove("hidden");
+
+  if (typeof showChatFab === "function") showChatFab(false);
+
   const usernameInput = document.getElementById("username");
   if (usernameInput && customer.robloxUsername && !usernameInput.value.trim()) {
     usernameInput.value = customer.robloxUsername;
