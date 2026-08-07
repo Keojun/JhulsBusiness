@@ -1,6 +1,17 @@
 /**
- * Order form, invoice generation, and modal flow.
+ * Order form, pricing, payment QR flow, invoice generation, and modals.
  */
+
+const REROLL_PACK = 50;
+const PRICE_PER_PACK = 54;
+
+function calcPrice(rerolls) {
+  return (rerolls / REROLL_PACK) * PRICE_PER_PACK;
+}
+
+function formatPrice(amount) {
+  return "₱" + amount.toFixed(2);
+}
 
 function openModal(id) {
   const modal = document.getElementById(id);
@@ -81,7 +92,6 @@ function initModals() {
     confirmBtn.addEventListener("click", showReviewSection);
   }
 
-  /* Reset instruction steps when instructions modal opens */
   const instructionsModal = document.getElementById("modal-instructions");
   if (instructionsModal) {
     const observer = new MutationObserver(() => {
@@ -94,12 +104,80 @@ function initModals() {
   }
 }
 
+function initRerollStepper() {
+  const minusBtn = document.getElementById("reroll-minus");
+  const plusBtn = document.getElementById("reroll-plus");
+  const display = document.getElementById("reroll-amount-display");
+  const hiddenInput = document.getElementById("reroll-amount");
+  const priceDisplay = document.getElementById("price-display");
+
+  if (!minusBtn || !plusBtn) return;
+
+  let rerolls = 50;
+
+  function updateDisplay() {
+    display.textContent = rerolls;
+    hiddenInput.value = rerolls;
+    priceDisplay.textContent = formatPrice(calcPrice(rerolls));
+    minusBtn.disabled = rerolls <= REROLL_PACK;
+  }
+
+  minusBtn.addEventListener("click", () => {
+    if (rerolls > REROLL_PACK) {
+      rerolls -= REROLL_PACK;
+      updateDisplay();
+    }
+  });
+
+  plusBtn.addEventListener("click", () => {
+    rerolls += REROLL_PACK;
+    updateDisplay();
+  });
+
+  updateDisplay();
+}
+
+function initPaymentModal(onPaymentDone) {
+  const tabGcash = document.getElementById("tab-gcash");
+  const tabPaymaya = document.getElementById("tab-paymaya");
+  const qrGcash = document.getElementById("payment-qr-gcash");
+  const qrPaymaya = document.getElementById("payment-qr-paymaya");
+  const btnDone = document.getElementById("btn-payment-done");
+
+  let selectedMethod = "gcash";
+
+  function selectMethod(method) {
+    selectedMethod = method;
+    tabGcash.classList.toggle("active", method === "gcash");
+    tabPaymaya.classList.toggle("active", method === "paymaya");
+    qrGcash.classList.toggle("hidden", method !== "gcash");
+    qrPaymaya.classList.toggle("hidden", method !== "paymaya");
+  }
+
+  tabGcash.addEventListener("click", () => selectMethod("gcash"));
+  tabPaymaya.addEventListener("click", () => selectMethod("paymaya"));
+
+  btnDone.addEventListener("click", () => {
+    onPaymentDone(selectedMethod);
+  });
+
+  return {
+    show(order) {
+      document.getElementById("payment-amount-display").textContent = formatPrice(order.pricePHP);
+      document.getElementById("payment-reroll-detail").textContent =
+        order.rerollAmount + " rerolls";
+      selectMethod("gcash");
+      openModal("modal-payment");
+    },
+  };
+}
+
 function drawInvoice(order) {
   const canvas = document.getElementById("invoice-canvas");
   if (!canvas) return null;
 
   const W = 600;
-  const H = 720;
+  const H = 800;
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext("2d");
@@ -136,7 +214,9 @@ function drawInvoice(order) {
 
   const details = [
     ["Username", order.username],
-    ["Reroll Amount", order.rerollAmount],
+    ["Reroll Amount", order.rerollAmount + " rerolls"],
+    ["Total Price", formatPrice(order.pricePHP)],
+    ["Payment", order.paymentMethod === "paymaya" ? "Maya (PayMaya)" : "GCash"],
     ["Date", order.date],
     ["Status", "Pending Verification"],
   ];
@@ -222,27 +302,55 @@ function initOrderForm() {
   if (!form) return;
 
   let currentOrder = null;
+  let pendingOrder = null;
+
+  const paymentModal = initPaymentModal(async (paymentMethod) => {
+    if (!pendingOrder) return;
+
+    pendingOrder.paymentMethod = paymentMethod;
+    currentOrder = await addOrder(pendingOrder);
+    drawInvoice(currentOrder);
+
+    const statusEl = document.getElementById("order-save-status");
+    if (statusEl) {
+      if (currentOrder.savedToDb) {
+        statusEl.className = "notice notice-info";
+        statusEl.innerHTML =
+          '<span class="notice-icon">✅</span><div><strong>Order saved!</strong> Jhul can see it in admin.</div>';
+      } else {
+        statusEl.className = "notice notice-warning";
+        statusEl.innerHTML = `<span class="notice-icon">⚠️</span><div><strong>Order saved locally.</strong> ${currentOrder.dbError || ""} Still send invoice to Jhul on Facebook.</div>`;
+      }
+      statusEl.classList.remove("hidden");
+    }
+
+    closeModal("modal-payment");
+    openModal("modal-invoice");
+    pendingOrder = null;
+  });
 
   async function submitOrder(e) {
     e.preventDefault();
 
     const username = document.getElementById("username").value.trim();
-    const rerollAmount = document.getElementById("reroll-amount").value.trim();
+    const rerollAmount = Number(document.getElementById("reroll-amount").value);
 
-    if (!username || !rerollAmount) {
-      alert("Please fill in all fields.");
+    if (!username) {
+      alert("Please enter your username.");
       return;
     }
 
-    if (isNaN(Number(rerollAmount)) || Number(rerollAmount) < 1) {
-      alert("Reroll amount must be a valid number (at least 1).");
+    if (!rerollAmount || rerollAmount % REROLL_PACK !== 0) {
+      alert("Reroll amount must be in packs of 50.");
       return;
     }
 
-    const orderData = {
+    pendingOrder = {
       id: generateOrderId(),
       username,
-      rerollAmount: Number(rerollAmount),
+      rerollAmount,
+      pricePHP: calcPrice(rerollAmount),
+      paymentMethod: null,
       date: new Date().toLocaleString("en-PH", {
         dateStyle: "medium",
         timeStyle: "short",
@@ -251,22 +359,7 @@ function initOrderForm() {
       createdAt: new Date().toISOString(),
     };
 
-    currentOrder = await addOrder(orderData);
-    drawInvoice(currentOrder);
-
-    const statusEl = document.getElementById("order-save-status");
-    if (statusEl) {
-      if (currentOrder.savedToDb) {
-        statusEl.className = "notice notice-info";
-        statusEl.innerHTML = '<span class="notice-icon">✅</span><div><strong>Order saved!</strong> Jhul can see it in admin.</div>';
-      } else {
-        statusEl.className = "notice notice-warning";
-        statusEl.innerHTML = `<span class="notice-icon">⚠️</span><div><strong>Order saved locally.</strong> ${currentOrder.dbError || ""} Still send invoice to Jhul on Facebook.</div>`;
-      }
-      statusEl.classList.remove("hidden");
-    }
-
-    openModal("modal-invoice");
+    paymentModal.show(pendingOrder);
   }
 
   form.addEventListener("submit", submitOrder);
@@ -290,5 +383,6 @@ function initOrderForm() {
 
 document.addEventListener("DOMContentLoaded", () => {
   initModals();
+  initRerollStepper();
   initOrderForm();
 });

@@ -258,6 +258,172 @@ body {
   }
 }
 
+/* ── Reroll stepper & pricing ── */
+.label-hint {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--dark-soft);
+}
+
+.reroll-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.stepper-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, var(--orange-mid), var(--green-mid));
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, opacity 0.2s;
+  line-height: 1;
+}
+
+.stepper-btn:hover:not(:disabled) {
+  transform: scale(1.08);
+}
+
+.stepper-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stepper-display {
+  text-align: center;
+  min-width: 120px;
+}
+
+.stepper-display span:first-child {
+  display: block;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--dark);
+  line-height: 1.1;
+}
+
+.stepper-unit {
+  font-size: 0.85rem;
+  color: var(--dark-soft);
+  font-weight: 500;
+}
+
+.price-display {
+  text-align: center;
+  padding: 0.85rem 1rem;
+  background: linear-gradient(135deg, var(--orange-light), var(--green-light));
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--orange-pastel);
+}
+
+.price-label {
+  font-size: 0.85rem;
+  color: var(--dark-soft);
+  margin-right: 0.5rem;
+}
+
+.price-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--orange-deep);
+}
+
+/* ── Payment modal ── */
+.payment-amount-box {
+  text-align: center;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, var(--orange-pastel), var(--green-pastel));
+  border-radius: var(--radius-sm);
+  margin-bottom: 1.25rem;
+}
+
+.payment-amount-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--dark-soft);
+  margin-bottom: 0.25rem;
+}
+
+.payment-amount-value {
+  display: block;
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: var(--dark);
+}
+
+.payment-amount-detail {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--dark-soft);
+  margin-top: 0.25rem;
+}
+
+.payment-method-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.payment-tab {
+  flex: 1;
+  padding: 0.75rem;
+  border: 2px solid var(--green-pastel);
+  border-radius: var(--radius-sm);
+  background: white;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.payment-tab.active {
+  border-color: var(--orange-deep);
+  background: linear-gradient(135deg, var(--orange-light), var(--green-light));
+  color: var(--dark);
+}
+
+.payment-tab[data-method="gcash"].active {
+  border-color: #1877f2;
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+}
+
+.payment-tab[data-method="paymaya"].active {
+  border-color: var(--green-deep);
+  background: linear-gradient(135deg, var(--green-light), #c8e6c9);
+}
+
+.payment-qr-wrap {
+  text-align: center;
+  padding: 1rem;
+  background: white;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--green-pastel);
+}
+
+.payment-qr-img {
+  max-width: 260px;
+  width: 100%;
+  border-radius: 8px;
+  margin: 0 auto;
+  display: block;
+}
+
+.payment-qr-label {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--dark-soft);
+}
+
 .site-header {
   background: linear-gradient(135deg, var(--orange-pastel) 0%, #ffd4b8 50%, var(--orange-light) 100%);
   border-bottom: 3px solid var(--orange-mid);

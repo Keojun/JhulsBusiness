@@ -49,7 +49,7 @@ async function renderOrdersTable() {
   const tbody = document.getElementById("orders-tbody");
   if (!tbody) return;
 
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;">Loading orders...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;">Loading orders...</td></tr>';
 
   try {
     const orders = (await getOrders()).sort(
@@ -58,7 +58,7 @@ async function renderOrdersTable() {
 
     if (orders.length === 0) {
       tbody.innerHTML =
-        '<tr><td colspan="6" style="text-align:center;padding:2rem;">No orders yet. Place a test order on the Gakuran page first.</td></tr>';
+        '<tr><td colspan="8" style="text-align:center;padding:2rem;">No orders yet. Place a test order on the Gakuran page first.</td></tr>';
       return;
     }
 
@@ -69,6 +69,8 @@ async function renderOrdersTable() {
         <td><code>${o.id}</code></td>
         <td>${escapeHtml(o.username)}</td>
         <td>${o.rerollAmount}</td>
+        <td>${o.pricePHP != null ? "₱" + Number(o.pricePHP).toFixed(2) : "—"}</td>
+        <td>${o.paymentMethod === "paymaya" ? "Maya" : o.paymentMethod === "gcash" ? "GCash" : "—"}</td>
         <td>${o.date || new Date(o.createdAt).toLocaleString("en-PH")}</td>
         <td><span class="status-badge status-${o.status || "pending"}">${o.status || "pending"}</span></td>
         <td class="admin-actions">
@@ -88,7 +90,7 @@ async function renderOrdersTable() {
       )
       .join("");
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:#c0392b;">${escapeHtml(err.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:#c0392b;">${escapeHtml(err.message)}</td></tr>`;
   }
 }
 

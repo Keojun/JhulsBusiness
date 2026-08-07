@@ -5,6 +5,8 @@ create table if not exists orders (
   id text primary key,
   username text not null,
   reroll_amount integer not null,
+  price_php numeric(10, 2),
+  payment_method text,
   status text not null default 'pending',
   review_code text,
   created_at timestamptz not null default now()

@@ -65,8 +65,20 @@
             <input type="text" id="username" name="username" placeholder="Your Roblox username" required autocomplete="off" />
           </div>
           <div class="form-group">
-            <label for="reroll-amount">Reroll Amount</label>
-            <input type="number" id="reroll-amount" name="reroll-amount" placeholder="e.g. 5" min="1" required />
+            <label>Reroll Amount <span class="label-hint">(50 rerolls per pack — ₱54 each)</span></label>
+            <div class="reroll-stepper">
+              <button type="button" class="stepper-btn" id="reroll-minus" aria-label="Decrease rerolls">−</button>
+              <div class="stepper-display">
+                <span id="reroll-amount-display">50</span>
+                <span class="stepper-unit">rerolls</span>
+              </div>
+              <button type="button" class="stepper-btn" id="reroll-plus" aria-label="Increase rerolls">+</button>
+            </div>
+            <input type="hidden" id="reroll-amount" name="reroll-amount" value="50" />
+            <div class="price-display">
+              <span class="price-label">Total Price:</span>
+              <span class="price-value" id="price-display">₱54.00</span>
+            </div>
           </div>
 
           <div class="text-center mt-2">
@@ -74,7 +86,7 @@
               🐸 Place Order
             </button>
             <button type="submit" class="hidden" id="order-submit-hidden" aria-hidden="true">Submit</button>
-            <p style="font-size:0.9rem;color:var(--dark-soft);margin-top:0.85rem;font-weight:500;">Fill in your details above, then click to generate your invoice</p>
+            <p style="font-size:0.9rem;color:var(--dark-soft);margin-top:0.85rem;font-weight:500;">Enter username, choose rerolls, then pay via GCash or PayMaya</p>
           </div>
         </form>
       </div>
@@ -133,6 +145,49 @@
 
   </div>
 
+  <!-- Modal 0: Payment (GCash / PayMaya QR) -->
+  <div id="modal-payment" class="modal-overlay modal-no-close hidden" role="dialog" aria-modal="true">
+    <div class="modal-box modal-box-lg">
+      <div class="modal-header" style="padding-right:0;">
+        <h2>💳 Pay Exact Amount</h2>
+        <p>Scan the QR code below to pay before continuing.</p>
+      </div>
+
+      <div class="payment-amount-box">
+        <span class="payment-amount-label">Amount to Pay</span>
+        <span class="payment-amount-value" id="payment-amount-display">₱54.00</span>
+        <span class="payment-amount-detail" id="payment-reroll-detail">50 rerolls</span>
+      </div>
+
+      <div class="payment-method-tabs">
+        <button type="button" class="payment-tab active" data-method="gcash" id="tab-gcash">
+          GCash
+        </button>
+        <button type="button" class="payment-tab" data-method="paymaya" id="tab-paymaya">
+          Maya (PayMaya)
+        </button>
+      </div>
+
+      <div class="payment-qr-wrap" id="payment-qr-gcash">
+        <img src="images/qr-gcash.png" alt="GCash QR Code — JHUL" class="payment-qr-img" />
+        <p class="payment-qr-label">GCash / InstaPay — JHUL</p>
+      </div>
+      <div class="payment-qr-wrap hidden" id="payment-qr-paymaya">
+        <img src="images/qr-paymaya.png" alt="Maya QR Code" class="payment-qr-img" />
+        <p class="payment-qr-label">Maya — Jhuliane Phenne Cammayo</p>
+      </div>
+
+      <div class="notice notice-warning mt-2" style="margin-bottom:0;">
+        <span class="notice-icon">⚠️</span>
+        <div>Pay the <strong>exact amount</strong> shown above. Transfer fees may apply.</div>
+      </div>
+
+      <button type="button" id="btn-payment-done" class="btn btn-green" style="width:100%;margin-top:1.25rem;padding:1rem;font-size:1.05rem;">
+        ✓ I've Scanned & Paid — Continue
+      </button>
+    </div>
+  </div>
+
   <!-- Modal 1: Invoice Download -->
   <div id="modal-invoice" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-invoice-title">
     <div class="modal-box">
@@ -174,21 +229,21 @@
           <p class="instructions-intro">Complete all steps in order!</p>
           <ol class="instructions-list">
             <li>
-              <span><strong>Step 1:</strong> Message Jhul on Facebook Messenger and <strong>send the invoice image</strong> you just downloaded.
+              <span><strong>Step 1:</strong> You already paid via <strong>GCash or Maya</strong> using the QR code. Keep your payment proof ready.</span>
+            </li>
+            <li>
+              <span><strong>Step 2:</strong> <strong>Download your invoice</strong> and message Jhul on Facebook Messenger — send the invoice image.
                 <br><a href="https://www.facebook.com/jhulcammayo" target="_blank" rel="noopener" style="color:var(--orange-deep);font-weight:600;">→ facebook.com/jhulcammayo</a>
               </span>
             </li>
             <li>
-              <span><strong>Step 2:</strong> <strong>Wait for Jhul</strong> to verify your order and send you the QR code. ⚠️ Do not send payment receipts before verification!</span>
-            </li>
-            <li>
-              <span><strong>Step 3:</strong> After Jhul confirms, <strong>send your payment</strong> using the QR code provided.</span>
+              <span><strong>Step 3:</strong> <strong>Wait for Jhul</strong> to verify your payment and order. Do not send extra receipts unexpectedly.</span>
             </li>
             <li>
               <span><strong>Step 4:</strong> <strong>Wait for your Private Server link</strong> and your rerolls to be completed!</span>
             </li>
             <li>
-              <span><strong>Step 5:</strong> After your order is done, Jhul will send you a <strong>review code</strong> to leave a verified review.</span>
+              <span><strong>Step 5:</strong> After your order is done, Jhul will send you a <strong>review code</strong> below.</span>
             </li>
           </ol>
 
@@ -211,9 +266,9 @@
           <h3>Are you sure?</h3>
           <p>Please confirm you understand the order process:</p>
           <ul class="confirm-checklist">
-            <li>Send the invoice to Jhul on Messenger first</li>
-            <li>Wait for verification before paying</li>
-            <li>Do <strong>not</strong> send receipts unexpectedly</li>
+            <li>I paid the exact amount via GCash or Maya</li>
+            <li>I will send the invoice to Jhul on Messenger</li>
+            <li>I will wait for Jhul to verify before expecting rerolls</li>
             <li>All details are final — <strong>no refunds</strong></li>
           </ul>
         </div>

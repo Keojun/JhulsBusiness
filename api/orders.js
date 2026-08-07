@@ -33,6 +33,8 @@ module.exports = async function handler(req, res) {
         id: o.id,
         username: o.username,
         rerollAmount: o.reroll_amount,
+        pricePHP: o.price_php != null ? Number(o.price_php) : null,
+        paymentMethod: o.payment_method || null,
         status: o.status,
         reviewCode: o.review_code,
         date: new Date(o.created_at).toLocaleString("en-PH", {
@@ -46,20 +48,25 @@ module.exports = async function handler(req, res) {
     }
 
     if (req.method === "POST") {
-      const { id, username, rerollAmount, status, createdAt } = body;
+      const { id, username, rerollAmount, pricePHP, paymentMethod, status, createdAt } = body;
 
       if (!id || !username || !rerollAmount) {
         return sendJson(res, 400, { error: "Missing required fields" });
       }
 
+      const row = {
+        id,
+        username,
+        reroll_amount: Number(rerollAmount),
+        status: status || "pending",
+        created_at: createdAt || new Date().toISOString(),
+      };
+
+      if (pricePHP != null) row.price_php = Number(pricePHP);
+      if (paymentMethod) row.payment_method = paymentMethod;
+
       const rows = await dbRequest("POST", "orders", {
-        body: {
-          id,
-          username,
-          reroll_amount: Number(rerollAmount),
-          status: status || "pending",
-          created_at: createdAt || new Date().toISOString(),
-        },
+        body: row,
         prefer: "return=representation",
       });
 
@@ -69,6 +76,8 @@ module.exports = async function handler(req, res) {
         id: data.id,
         username: data.username,
         rerollAmount: data.reroll_amount,
+        pricePHP: data.price_php != null ? Number(data.price_php) : null,
+        paymentMethod: data.payment_method || null,
         status: data.status,
         savedToDb: true,
         date: new Date(data.created_at).toLocaleString("en-PH", {
