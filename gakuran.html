@@ -8,12 +8,10 @@
   <link rel="icon" href="images/jhul-logo.png" type="image/png" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
-<body>
+<body class="page-gakuran">
 
-  <!-- Background floating stickers -->
-  <img src="images/jhul-smile.png" alt="" class="sticker sticker-bg sticker-bg-1" aria-hidden="true" />
-  <img src="images/jhul-happy.png" alt="" class="sticker sticker-bg sticker-bg-2" aria-hidden="true" />
-  <img src="images/jhul-sad.png" alt="" class="sticker sticker-bg sticker-bg-3" aria-hidden="true" />
+  <!-- Gakuran page background (shop only) -->
+  <div class="gakuran-page-bg" aria-hidden="true"></div>
 
   <!-- Header -->
   <header class="site-header">
@@ -35,7 +33,16 @@
     </div>
   </header>
 
-  <div class="container" style="padding-top:2rem;">
+  <!-- Gakuran branding banner -->
+  <section class="gakuran-hero-banner" aria-label="Gakuran game banner">
+    <img src="images/gakuran-bg-sakura.png" alt="GAKURAN — Official reroll shop" class="gakuran-hero-img" />
+    <div class="gakuran-hero-label">
+      <span class="gakuran-hero-badge">🎴 GAKURAN REROLLS</span>
+      <p>You're in the right place — order your Gakuran rerolls below</p>
+    </div>
+  </section>
+
+  <div class="container gakuran-page-content">
 
     <div class="notice notice-warning notice-with-sticker">
       <img src="images/jhul-sad.png" alt="" class="sticker sticker-sm sticker-tilt-l" aria-hidden="true" />
