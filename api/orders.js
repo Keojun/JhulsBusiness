@@ -36,6 +36,7 @@ module.exports = async function handler(req, res) {
         rerollAmount: o.reroll_amount,
         pricePHP: o.price_php != null ? Number(o.price_php) : null,
         paymentMethod: o.payment_method || null,
+        customerId: o.customer_id || null,
         status: o.status,
         reviewCode: o.review_code,
         date: formatPhilippinesDateTime(o.created_at),
@@ -62,6 +63,10 @@ module.exports = async function handler(req, res) {
 
       if (pricePHP != null) row.price_php = Number(pricePHP);
       if (paymentMethod) row.payment_method = paymentMethod;
+
+      const { getCustomerFromRequest } = require("../lib/auth");
+      const customer = await getCustomerFromRequest(req);
+      if (customer) row.customer_id = customer.id;
 
       const rows = await dbRequest("POST", "orders", {
         body: row,

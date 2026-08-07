@@ -6,6 +6,10 @@ let allOrders = [];
 let currentFilter = "all";
 let searchQuery = "";
 let clockInterval = null;
+let adminActiveView = "orders";
+let adminConversations = [];
+let adminActiveConvId = null;
+let adminChatPoll = null;
 
 function initAdmin() {
   const loginForm = document.getElementById("admin-login");
@@ -52,12 +56,22 @@ function initAdmin() {
   if (refreshBtn) {
     refreshBtn.addEventListener("click", () => {
       refreshBtn.disabled = true;
-      renderOrders().finally(() => {
+      const task = adminActiveView === "messages" ? loadAdminConversations() : renderOrders();
+      task.finally(() => {
         refreshBtn.disabled = false;
-        showToast("Orders refreshed", "success");
+        showToast(adminActiveView === "messages" ? "Messages refreshed" : "Orders refreshed", "success");
       });
     });
   }
+
+  document.querySelectorAll(".admin-main-tab").forEach((tab) => {
+    tab.addEventListener("click", () => switchAdminView(tab.dataset.view));
+  });
+
+  document.getElementById("admin-chat-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    await sendAdminReply();
+  });
 
   if (searchInput) {
     searchInput.addEventListener("input", () => {
@@ -84,17 +98,47 @@ function showDashboard() {
   document.getElementById("login-section").classList.add("hidden");
   document.getElementById("admin-dashboard").classList.remove("hidden");
   document.getElementById("btn-logout").classList.remove("hidden");
-  renderOrders();
+  switchAdminView("orders");
 }
+
+function switchAdminView(view) {
+  adminActiveView = view;
+  document.querySelectorAll(".admin-main-tab").forEach((t) => {
+    t.classList.toggle("active", t.dataset.view === view);
+  });
+  document.getElementById("admin-view-orders").classList.toggle("hidden", view !== "orders");
+  document.getElementById("admin-view-messages").classList.toggle("hidden", view !== "messages");
+
+  if (view === "orders") {
+    stopAdminChatPoll();
+    renderOrders();
+  } else {
+    loadAdminConversations();
+    startAdminChatPoll();
+  }
+}
+
+window.openAdminChatForOrder = function (orderId) {
+  switchAdminView("messages");
+  const conv = adminConversations.find((c) => c.orderId === orderId);
+  if (conv) {
+    selectAdminConversation(conv.id);
+  } else {
+    showToast("No chat yet for this order — customer may message you first.", "error");
+  }
+};
 
 function logout() {
   sessionStorage.removeItem("jhul_admin");
   sessionStorage.removeItem("jhul_admin_pw");
+  stopAdminChatPoll();
   document.getElementById("login-section").classList.remove("hidden");
   document.getElementById("admin-dashboard").classList.add("hidden");
   document.getElementById("btn-logout").classList.add("hidden");
   document.getElementById("admin-password").value = "";
   allOrders = [];
+  adminConversations = [];
+  adminActiveConvId = null;
 }
 
 function startManilaClock() {
@@ -253,6 +297,11 @@ function renderOrderCard(o) {
             ? `<button type="button" class="btn btn-outline btn-sm btn-copy-code" data-code="${escapeHtml(o.reviewCode)}">📋 ${escapeHtml(o.reviewCode)}</button>`
             : ""
         }
+        ${
+          o.customerId
+            ? `<button type="button" class="btn btn-outline btn-sm btn-order-chat" data-order-id="${escapeHtml(o.id)}">💬 Chat</button>`
+            : ""
+        }
       </div>
     </article>
   `;
@@ -280,6 +329,12 @@ document.addEventListener("click", (e) => {
   const copyBtn = e.target.closest(".btn-copy-code");
   if (copyBtn) {
     copyCode(copyBtn.dataset.code);
+    return;
+  }
+
+  const chatBtn = e.target.closest(".btn-order-chat");
+  if (chatBtn) {
+    openAdminChatForOrder(chatBtn.dataset.orderId);
   }
 });
 
@@ -323,6 +378,130 @@ function escapeHtml(str) {
   const div = document.createElement("div");
   div.textContent = str;
   return div.innerHTML;
+}
+
+async function loadAdminConversations() {
+  const listEl = document.getElementById("admin-conv-list");
+  if (!listEl) return;
+
+  listEl.innerHTML = '<p class="chat-loading">Loading conversations…</p>';
+
+  try {
+    adminConversations = await getConversations(true);
+    renderAdminConvList();
+    if (adminActiveConvId) {
+      await loadAdminMessages(adminActiveConvId);
+    }
+  } catch (err) {
+    listEl.innerHTML = `<p class="chat-error">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function renderAdminConvList() {
+  const listEl = document.getElementById("admin-conv-list");
+  if (!listEl) return;
+
+  if (!adminConversations.length) {
+    listEl.innerHTML = '<p class="chat-empty">No customer messages yet.</p>';
+    return;
+  }
+
+  listEl.innerHTML = adminConversations
+    .map(
+      (c) => `
+    <button type="button" class="admin-conv-item ${c.id === adminActiveConvId ? "active" : ""}" data-conv-id="${c.id}">
+      <span class="admin-conv-name">${escapeHtml(c.customerName)}</span>
+      <span class="admin-conv-meta">${escapeHtml(c.customerRoblox || c.customerEmail || "")}</span>
+      <span class="admin-conv-subject">${escapeHtml(c.subject)}${c.orderId ? ` · ${escapeHtml(c.orderId)}` : ""}</span>
+      <span class="admin-conv-time">${escapeHtml(c.updatedAtFormatted || "")}</span>
+    </button>`
+    )
+    .join("");
+
+  listEl.querySelectorAll(".admin-conv-item").forEach((btn) => {
+    btn.addEventListener("click", () => selectAdminConversation(btn.dataset.convId));
+  });
+}
+
+async function selectAdminConversation(convId) {
+  adminActiveConvId = convId;
+  renderAdminConvList();
+  await loadAdminMessages(convId);
+  document.getElementById("admin-chat-form")?.classList.remove("hidden");
+}
+
+async function loadAdminMessages(convId) {
+  const threadEl = document.getElementById("admin-chat-messages");
+  const headerEl = document.getElementById("admin-chat-header");
+  const conv = adminConversations.find((c) => c.id === convId);
+
+  if (headerEl && conv) {
+    headerEl.innerHTML = `
+      <strong>${escapeHtml(conv.customerName)}</strong>
+      <span>${escapeHtml(conv.customerRoblox || "")} · ${escapeHtml(conv.subject)}</span>
+      ${conv.orderId ? `<span class="admin-chat-order-tag">Order: ${escapeHtml(conv.orderId)}</span>` : ""}`;
+  }
+
+  try {
+    const messages = await getMessages(convId, true);
+    if (!threadEl) return;
+
+    if (!messages.length) {
+      threadEl.innerHTML = '<p class="chat-empty">No messages yet.</p>';
+      return;
+    }
+
+    threadEl.innerHTML = messages
+      .map(
+        (m) => `
+      <div class="chat-bubble chat-bubble-${m.senderType}">
+        <p>${escapeHtml(m.body)}</p>
+        <time>${escapeHtml(m.createdAtFormatted || "")}</time>
+      </div>`
+      )
+      .join("");
+
+    threadEl.scrollTop = threadEl.scrollHeight;
+  } catch (err) {
+    if (threadEl) threadEl.innerHTML = `<p class="chat-error">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+async function sendAdminReply() {
+  const input = document.getElementById("admin-chat-input");
+  const text = input?.value.trim();
+  if (!text || !adminActiveConvId) return;
+
+  input.disabled = true;
+  try {
+    await sendChatMessage(adminActiveConvId, text, true);
+    input.value = "";
+    await loadAdminMessages(adminActiveConvId);
+    await loadAdminConversations();
+  } catch (err) {
+    showToast(err.message, "error");
+  } finally {
+    input.disabled = false;
+    input.focus();
+  }
+}
+
+function startAdminChatPoll() {
+  stopAdminChatPoll();
+  adminChatPoll = setInterval(async () => {
+    if (adminActiveView !== "messages") return;
+    try {
+      await loadAdminConversations();
+      if (adminActiveConvId) await loadAdminMessages(adminActiveConvId);
+    } catch (_) {}
+  }, 5000);
+}
+
+function stopAdminChatPoll() {
+  if (adminChatPoll) {
+    clearInterval(adminChatPoll);
+    adminChatPoll = null;
+  }
 }
 
 document.addEventListener("DOMContentLoaded", initAdmin);

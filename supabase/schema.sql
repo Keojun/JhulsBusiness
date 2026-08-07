@@ -7,10 +7,49 @@ create table if not exists orders (
   reroll_amount integer not null,
   price_php numeric(10, 2),
   payment_method text,
+  customer_id uuid,
   status text not null default 'pending',
   review_code text,
   created_at timestamptz not null default now()
 );
+
+create table if not exists customers (
+  id uuid primary key default gen_random_uuid(),
+  email text unique not null,
+  roblox_username text not null,
+  password_hash text not null,
+  display_name text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists customer_sessions (
+  token text primary key,
+  customer_id uuid not null references customers(id) on delete cascade,
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists conversations (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references customers(id) on delete cascade,
+  order_id text references orders(id) on delete set null,
+  subject text not null default 'General',
+  status text not null default 'open',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists messages (
+  id bigint generated always as identity primary key,
+  conversation_id uuid not null references conversations(id) on delete cascade,
+  sender_type text not null check (sender_type in ('customer', 'admin')),
+  body text not null,
+  created_at timestamptz not null default now(),
+  read_at timestamptz
+);
+
+alter table orders add constraint orders_customer_id_fkey
+  foreign key (customer_id) references customers(id) on delete set null;
 
 create table if not exists review_codes (
   code text primary key,
@@ -54,6 +93,10 @@ alter table orders enable row level security;
 alter table review_codes enable row level security;
 alter table site_reviews enable row level security;
 alter table facebook_reviews enable row level security;
+alter table customers enable row level security;
+alter table customer_sessions enable row level security;
+alter table conversations enable row level security;
+alter table messages enable row level security;
 
 -- Public read for reviews only (optional — API handles everything via service role)
 create policy "Public read facebook reviews" on facebook_reviews for select using (true);

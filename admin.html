@@ -53,14 +53,21 @@
     <div id="admin-dashboard" class="hidden">
       <div class="admin-dashboard-header">
         <div>
-          <h1 class="section-title admin-title">Order Dashboard</h1>
-          <p class="section-subtitle admin-subtitle">Complete orders after rerolls are delivered, then send the review code on Messenger.</p>
+          <h1 class="section-title admin-title">Admin Dashboard</h1>
+          <p class="section-subtitle admin-subtitle">Manage orders, reply to customer chats, and send review codes.</p>
         </div>
-        <button type="button" id="btn-refresh" class="btn btn-outline admin-refresh-btn" title="Refresh orders">
+        <button type="button" id="btn-refresh" class="btn btn-outline admin-refresh-btn" title="Refresh">
           ↻ Refresh
         </button>
       </div>
 
+      <div class="admin-main-tabs">
+        <button type="button" class="admin-main-tab active" data-view="orders">📦 Orders</button>
+        <button type="button" class="admin-main-tab" data-view="messages">💬 Messages</button>
+      </div>
+
+      <!-- Orders View -->
+      <div id="admin-view-orders">
       <div class="admin-stats" id="admin-stats">
         <div class="admin-stat-card stat-pending">
           <span class="admin-stat-label">Pending</span>
@@ -108,6 +115,30 @@
           <strong>Times shown in Philippines (Manila, UTC+8).</strong> Orders sync from Supabase when configured; otherwise they only appear from this browser's local storage.
         </div>
       </div>
+      </div>
+
+      <!-- Messages View -->
+      <div id="admin-view-messages" class="hidden">
+        <div class="admin-chat-inbox">
+          <div class="admin-chat-list-wrap">
+            <h3 class="admin-chat-list-title">Customer Chats</h3>
+            <div id="admin-conv-list" class="admin-conv-list">
+              <p class="chat-loading">Loading conversations…</p>
+            </div>
+          </div>
+          <div class="admin-chat-thread-wrap">
+            <div id="admin-chat-header" class="admin-chat-thread-header">
+              <p>Select a conversation to reply</p>
+            </div>
+            <div id="admin-chat-messages" class="admin-chat-messages"></div>
+            <form id="admin-chat-form" class="admin-chat-form hidden">
+              <input type="text" id="admin-chat-input" placeholder="Reply to customer…" maxlength="2000" autocomplete="off" required />
+              <button type="submit" class="btn btn-green">Send</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
     </div>
 
   </div>
