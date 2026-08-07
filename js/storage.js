@@ -8,8 +8,9 @@ const STORAGE_KEYS = {
   reviewCodes: "jhul_review_codes",
 };
 
-const CUSTOMER_TOKEN_KEY = "rbxdisc_customer_token";
 let customerCache = null;
+
+const FETCH_CREDENTIALS = { credentials: "include" };
 
 const PH_TIMEZONE = "Asia/Manila";
 
@@ -51,21 +52,16 @@ function adminHeaders() {
   return { "Content-Type": "application/json", "X-Admin-Password": adminPassword };
 }
 
-function getCustomerToken() {
-  return localStorage.getItem(CUSTOMER_TOKEN_KEY) || "";
-}
-
-function setCustomerToken(token) {
-  if (token) localStorage.setItem(CUSTOMER_TOKEN_KEY, token);
-  else localStorage.removeItem(CUSTOMER_TOKEN_KEY);
-  customerCache = null;
-}
-
 function customerHeaders(extra = {}) {
-  const headers = { "Content-Type": "application/json", ...extra };
-  const token = getCustomerToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
-  return headers;
+  return { "Content-Type": "application/json", ...extra };
+}
+
+function customerFetch(url, options = {}) {
+  return fetch(url, {
+    ...FETCH_CREDENTIALS,
+    ...options,
+    headers: customerHeaders(options.headers),
+  });
 }
 
 /* ── localStorage fallbacks ── */
@@ -121,18 +117,14 @@ function generateReviewCodeLocal() {
 
 async function addOrder(order) {
   try {
-    const res = await fetch("/api/orders", {
+    const res = await customerFetch("/api/orders", {
       method: "POST",
-      headers: customerHeaders(),
       body: JSON.stringify(order),
     });
     const data = await res.json();
     if (res.ok) return { ...data, savedToDb: true };
     return { ...order, savedToDb: false, dbError: data.error || `HTTP ${res.status}` };
   } catch (err) {
-    const orders = getOrdersLocal();
-    orders.push(order);
-    saveOrdersLocal(orders);
     return { ...order, savedToDb: false, dbError: err.message || "Network error" };
   }
 }
@@ -193,9 +185,8 @@ async function completeOrderApi(orderId) {
 
 async function validateReviewCode(code) {
   try {
-    const res = await fetch("/api/reviews?action=validate", {
+    const res = await customerFetch("/api/reviews?action=validate", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "validate", code }),
     });
     if (res.ok) {
@@ -212,9 +203,8 @@ async function validateReviewCode(code) {
 
 async function addSiteReview(review, code) {
   try {
-    const res = await fetch("/api/reviews", {
+    const res = await customerFetch("/api/reviews", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...review, code }),
     });
     if (res.ok) return await res.json();
@@ -235,7 +225,7 @@ async function addSiteReview(review, code) {
 
 async function getSiteReviews() {
   try {
-    const res = await fetch("/api/reviews?type=site");
+    const res = await customerFetch("/api/reviews?type=site");
     if (res.ok) return await res.json();
   } catch (_) {}
   return getSiteReviewsLocal();
@@ -243,7 +233,7 @@ async function getSiteReviews() {
 
 async function getFacebookReviews() {
   try {
-    const res = await fetch("/api/reviews?type=facebook");
+    const res = await customerFetch("/api/reviews?type=facebook");
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) return data;
@@ -259,71 +249,65 @@ async function getFacebookReviews() {
 }
 
 async function customerSignup({ email, password, robloxUsername, displayName }) {
-  const res = await fetch("/api/auth?action=signup", {
+  const res = await customerFetch("/api/auth?action=signup", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password, robloxUsername, displayName }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Signup failed");
-  setCustomerToken(data.token);
   customerCache = data.customer;
   return data.customer;
 }
 
 async function customerLogin({ email, password }) {
-  const res = await fetch("/api/auth?action=login", {
+  const res = await customerFetch("/api/auth?action=login", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Login failed");
-  setCustomerToken(data.token);
   customerCache = data.customer;
   return data.customer;
 }
 
 async function customerLogout() {
   try {
-    await fetch("/api/auth?action=logout", {
-      method: "POST",
-      headers: customerHeaders(),
-    });
+    await customerFetch("/api/auth?action=logout", { method: "POST" });
   } catch (_) {}
-  setCustomerToken("");
+  customerCache = null;
 }
 
 async function getCurrentCustomer(forceRefresh = false) {
-  if (!getCustomerToken()) return null;
   if (customerCache && !forceRefresh) return customerCache;
 
   try {
-    const res = await fetch("/api/auth?action=me", { headers: customerHeaders() });
+    const res = await customerFetch("/api/auth?action=me");
     if (!res.ok) {
-      setCustomerToken("");
+      customerCache = null;
       return null;
     }
     const data = await res.json();
     customerCache = data.customer;
     return data.customer;
   } catch (_) {
+    customerCache = null;
     return null;
   }
 }
 
 async function getConversations(asAdmin = false) {
-  const headers = asAdmin ? adminHeaders() : customerHeaders();
-  const res = await fetch("/api/chat?resource=conversations", { headers });
+  const res = await fetch("/api/chat?resource=conversations", {
+    ...FETCH_CREDENTIALS,
+    headers: asAdmin ? adminHeaders() : customerHeaders(),
+  });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Failed to load conversations");
   return data;
 }
 
 async function createConversation(subject, orderId = null) {
-  const res = await fetch("/api/chat?resource=conversations", {
+  const res = await customerFetch("/api/chat?resource=conversations", {
     method: "POST",
-    headers: customerHeaders(),
     body: JSON.stringify({ subject, orderId }),
   });
   const data = await res.json();
@@ -332,10 +316,12 @@ async function createConversation(subject, orderId = null) {
 }
 
 async function getMessages(conversationId, asAdmin = false) {
-  const headers = asAdmin ? adminHeaders() : customerHeaders();
   const res = await fetch(
     `/api/chat?resource=messages&conversationId=${encodeURIComponent(conversationId)}`,
-    { headers }
+    {
+      ...FETCH_CREDENTIALS,
+      headers: asAdmin ? adminHeaders() : customerHeaders(),
+    }
   );
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Failed to load messages");
@@ -343,12 +329,12 @@ async function getMessages(conversationId, asAdmin = false) {
 }
 
 async function sendChatMessage(conversationId, body, asAdmin = false) {
-  const headers = asAdmin ? adminHeaders() : customerHeaders();
   const res = await fetch(
     `/api/chat?resource=messages&conversationId=${encodeURIComponent(conversationId)}`,
     {
       method: "POST",
-      headers,
+      ...FETCH_CREDENTIALS,
+      headers: asAdmin ? adminHeaders() : customerHeaders(),
       body: JSON.stringify({ body }),
     }
   );

@@ -79,19 +79,24 @@ module.exports = async function handler(req, res) {
         return sendJson(res, 400, { error: "Missing required fields" });
       }
 
+      const customer = await getCustomerFromRequest(req);
+      if (!customer) {
+        return sendJson(res, 401, { error: "Login required to place orders" });
+      }
+
+      const normalizedUsername = String(username).trim();
+
       const row = {
         id,
-        username,
+        username: normalizedUsername,
         reroll_amount: Number(rerollAmount),
         status: status || "pending",
         created_at: createdAt || new Date().toISOString(),
+        customer_id: customer.id,
       };
 
       if (pricePHP != null) row.price_php = Number(pricePHP);
       if (paymentMethod) row.payment_method = paymentMethod;
-
-      const customer = await getCustomerFromRequest(req);
-      if (customer) row.customer_id = customer.id;
 
       const rows = await dbRequest("POST", "orders", {
         body: row,

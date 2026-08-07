@@ -1,6 +1,5 @@
 const {
   isDbConfigured,
-  testConnection,
   checkAdmin,
   parseBody,
   sendJson,
@@ -8,6 +7,7 @@ const {
   handleOptions,
 } = require("../lib/db");
 const { runChatCleanup } = require("../lib/cleanup");
+const { runHealthCheck, renderHealthHtml } = require("../lib/health-check");
 
 function authorizeCron(req) {
   const secret = process.env.CRON_SECRET;
@@ -16,12 +16,19 @@ function authorizeCron(req) {
   return auth === `Bearer ${secret}` || req.headers["x-cron-secret"] === secret;
 }
 
+function wantsJson(req, url) {
+  if (url.searchParams.get("format") === "json") return true;
+  const accept = req.headers.accept || req.headers.Accept || "";
+  return accept.includes("application/json");
+}
+
 module.exports = async function handler(req, res) {
+  const url = new URL(req.url || "/", "http://localhost");
+
   try {
     setCors(res);
     if (handleOptions(req, res)) return;
 
-    const url = new URL(req.url || "/", "http://localhost");
     const isCleanup = url.searchParams.get("cleanup") === "1";
 
     if (isCleanup) {
@@ -41,25 +48,32 @@ module.exports = async function handler(req, res) {
       return sendJson(res, 200, result);
     }
 
-    const configured = isDbConfigured();
-    let dbConnected = false;
-    let dbError = null;
+    const report = await runHealthCheck();
 
-    if (configured) {
-      const test = await testConnection();
-      dbConnected = test.ok;
-      dbError = test.error || null;
+    if (wantsJson(req, url)) {
+      const httpStatus = report.status === "down" ? 503 : 200;
+      return sendJson(res, httpStatus, report);
     }
 
-    return sendJson(res, 200, {
-      database: configured ? (dbConnected ? "connected" : "error") : "not_configured",
-      supabaseUrl: process.env.SUPABASE_URL ? "set" : "missing",
-      supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? "set" : "missing",
-      adminPassword: process.env.ADMIN_PASSWORD ? "custom" : "default (jhul2026)",
-      cronSecret: process.env.CRON_SECRET ? "set" : "missing",
-      dbError: dbConnected ? null : dbError || "Run supabase/schema.sql in Supabase SQL Editor",
-    });
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.status(report.status === "down" ? 503 : 200).send(renderHealthHtml(report));
   } catch (err) {
-    return sendJson(res, 500, { error: err.message, database: "crash" });
+    if (wantsJson(req, url)) {
+      return sendJson(res, 500, {
+        service: "RBXDISC",
+        status: "down",
+        online: false,
+        error: err.message,
+      });
+    }
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.status(500).send(
+      `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:2rem;background:#fdecea;">
+        <h1>❌ RBXDISC Health Check Failed</h1>
+        <p>${err.message}</p>
+        <p><a href="?format=json">View JSON</a></p>
+      </body></html>`
+    );
   }
 };

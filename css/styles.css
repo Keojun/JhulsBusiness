@@ -1929,6 +1929,87 @@ body {
   border-radius: var(--radius-sm);
 }
 
+/* ── Login page ── */
+.page-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, var(--cream) 0%, var(--green-light) 40%, var(--orange-light) 100%);
+}
+
+.login-page-wrap {
+  width: 100%;
+  max-width: 440px;
+  padding: 1.5rem;
+}
+
+.login-page-card {
+  position: relative;
+  padding: 2rem;
+  border: 2px solid var(--green-pastel);
+  box-shadow: var(--shadow-green);
+  overflow: hidden;
+}
+
+.login-page-sticker {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 85px;
+  pointer-events: none;
+}
+
+.login-page-header {
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.login-page-header h1 {
+  font-size: 1.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.login-page-header p {
+  color: var(--dark-soft);
+  font-size: 0.92rem;
+}
+
+.login-page-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+  background: var(--green-light);
+  padding: 0.35rem;
+  border-radius: 999px;
+}
+
+.login-page-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.55rem;
+  border-radius: 999px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.login-page-tab.active {
+  background: white;
+  color: var(--dark);
+  box-shadow: var(--shadow);
+}
+
+.login-page-btn {
+  width: 100%;
+  padding: 0.85rem;
+}
+
+.login-panel.hidden {
+  display: none !important;
+}
+
 /* ── Customer Auth Nav ── */
 .auth-nav-group {
   display: inline-flex;
