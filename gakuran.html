@@ -24,7 +24,10 @@
         </span>
       </a>
       <div class="header-actions">
-        <button type="button" class="header-icon-btn hidden" id="btn-header-chat" aria-label="Chat with Jhul">💬</button>
+        <button type="button" class="header-icon-btn hidden" id="btn-header-chat" aria-label="Chat with Jhul">
+          💬
+          <span id="header-chat-badge" class="chat-notify-badge hidden" aria-hidden="true">0</span>
+        </button>
         <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">
           <span class="nav-toggle-bar"></span>
           <span class="nav-toggle-bar"></span>
@@ -41,7 +44,10 @@
         <div class="nav-section nav-section-account">
           <span class="nav-section-label">Account</span>
           <span class="auth-user-pill">👤 <span id="auth-user-label">User</span></span>
-          <button type="button" class="btn btn-green btn-sm nav-chat-btn" id="btn-open-chat">💬 Chat Jhul</button>
+          <button type="button" class="btn btn-green btn-sm nav-chat-btn" id="btn-open-chat">
+            💬 Chat Jhul
+            <span id="nav-chat-badge" class="chat-notify-badge hidden" aria-hidden="true">0</span>
+          </button>
           <button type="button" class="btn btn-outline btn-sm" id="btn-logout-customer">Logout</button>
         </div>
         <div class="nav-section nav-section-social">
@@ -144,8 +150,8 @@
               </div>
             </div>
             <div class="form-group">
-              <label for="review-author">Your Name / Username</label>
-              <input type="text" id="review-author" placeholder="How you'd like to be shown" required />
+              <label for="review-author">Your Username <span class="label-hint">(from your logged-in account)</span></label>
+              <input type="text" id="review-author" readonly class="input-locked" placeholder="Loading account…" aria-readonly="true" />
             </div>
             <div class="form-group">
               <label for="review-text">Your Review</label>
@@ -243,6 +249,7 @@
     <button type="button" id="chat-fab" class="chat-fab" aria-label="Chat with Jhul">
       <img src="images/jhul-happy.png" alt="" class="chat-fab-avatar" aria-hidden="true" />
       <span class="chat-fab-label">Chat Jhul</span>
+      <span id="chat-fab-badge" class="chat-notify-badge hidden" aria-hidden="true">0</span>
     </button>
   </div>
 

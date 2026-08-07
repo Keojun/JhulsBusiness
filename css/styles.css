@@ -1119,6 +1119,14 @@ body.nav-open {
   border-radius: var(--radius);
 }
 
+.input-locked {
+  background: var(--green-light);
+  color: var(--dark);
+  cursor: not-allowed;
+  border-color: var(--green-pastel);
+  font-weight: 700;
+}
+
 .star-rating {
   display: flex;
   gap: 0.25rem;
@@ -2524,6 +2532,131 @@ body.nav-open {
   letter-spacing: 0.04em;
   vertical-align: middle;
   animation: chat-live-pulse 2s ease infinite;
+}
+
+.chat-notify-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: #e74c3c;
+  color: white;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.35);
+}
+
+.chat-notify-badge.hidden {
+  display: none !important;
+}
+
+.chat-notify-badge-inline {
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+.admin-main-tab {
+  position: relative;
+}
+
+.admin-main-tab .chat-notify-badge {
+  position: absolute;
+  top: -6px;
+  right: -4px;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  font-size: 0.62rem;
+}
+
+.header-icon-btn {
+  position: relative;
+}
+
+.header-icon-btn .chat-notify-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 1rem;
+  height: 1rem;
+  font-size: 0.6rem;
+}
+
+.nav-chat-btn {
+  position: relative;
+}
+
+.nav-chat-btn .chat-notify-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+}
+
+.chat-fab {
+  position: relative;
+}
+
+.chat-fab .chat-notify-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid white;
+}
+
+.admin-conv-item.has-unread,
+.chat-conv-item.has-unread {
+  border-color: var(--orange-deep);
+  box-shadow: 0 0 0 1px rgba(255, 154, 92, 0.25);
+}
+
+.chat-notify-toast {
+  position: fixed;
+  bottom: max(1.25rem, env(safe-area-inset-bottom, 1.25rem));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1200;
+  max-width: min(92vw, 360px);
+  padding: 0.85rem 1.1rem;
+  border-radius: 12px;
+  background: #2d3436;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+  animation: chat-toast-in 0.3s ease;
+}
+
+.page-gakuran.has-chat-fab .chat-notify-toast {
+  bottom: calc(5.5rem + env(safe-area-inset-bottom, 0));
+}
+
+.page-admin .chat-notify-toast {
+  bottom: max(1.5rem, env(safe-area-inset-bottom, 1.5rem));
+}
+
+.chat-notify-toast.hidden {
+  display: none !important;
+}
+
+.chat-notify-toast-info {
+  border: 2px solid var(--green-pastel);
+}
+
+@keyframes chat-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 @keyframes chat-live-pulse {
