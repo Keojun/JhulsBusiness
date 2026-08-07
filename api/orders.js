@@ -55,6 +55,37 @@ module.exports = async function handler(req, res) {
     }
 
     if (req.method === "POST") {
+      if (body.action === "void") {
+        if (!checkAdmin(req, body)) {
+          return sendJson(res, 401, { error: "Unauthorized" });
+        }
+
+        const { orderId } = body;
+        if (!orderId) return sendJson(res, 400, { error: "orderId required" });
+
+        const rows = await dbRequest("GET", "orders", {
+          query: `id=eq.${encodeURIComponent(orderId)}&select=*&limit=1`,
+        });
+        const order = Array.isArray(rows) ? rows[0] : null;
+        if (!order) return sendJson(res, 404, { error: "Order not found" });
+        if (order.status === "voided") {
+          return sendJson(res, 400, { error: "Order is already voided" });
+        }
+
+        await dbRequest("PATCH", "orders", {
+          query: `id=eq.${encodeURIComponent(orderId)}`,
+          body: { status: "voided", review_code: null },
+          prefer: "return=minimal",
+        });
+
+        await dbRequest("DELETE", "review_codes", {
+          query: `order_id=eq.${encodeURIComponent(orderId)}`,
+          prefer: "return=minimal",
+        });
+
+        return sendJson(res, 200, { ok: true, orderId, status: "voided" });
+      }
+
       if (body.action === "complete") {
         if (!checkAdmin(req, body)) {
           return sendJson(res, 401, { error: "Unauthorized" });

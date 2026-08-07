@@ -208,13 +208,14 @@ async function renderOrders() {
 }
 
 function updateStats() {
-  const pending = allOrders.filter((o) => o.status === "pending").length;
-  const completed = allOrders.filter((o) => o.status === "completed").length;
-  const revenue = allOrders.reduce((sum, o) => sum + (Number(o.pricePHP) || 0), 0);
+  const activeOrders = allOrders.filter((o) => o.status !== "voided");
+  const pending = activeOrders.filter((o) => o.status === "pending").length;
+  const completed = activeOrders.filter((o) => o.status === "completed").length;
+  const revenue = activeOrders.reduce((sum, o) => sum + (Number(o.pricePHP) || 0), 0);
 
   document.getElementById("stat-pending").textContent = pending;
   document.getElementById("stat-completed").textContent = completed;
-  document.getElementById("stat-total").textContent = allOrders.length;
+  document.getElementById("stat-total").textContent = activeOrders.length;
   document.getElementById("stat-revenue").textContent = formatPrice(revenue);
 }
 
@@ -296,7 +297,13 @@ function renderOrderCard(o) {
       <div class="admin-order-actions">
         ${
           status === "pending"
-            ? `<button type="button" class="btn btn-green btn-sm btn-complete" data-id="${escapeHtml(o.id)}">✓ Complete & Generate Code</button>`
+            ? `<button type="button" class="btn btn-outline btn-sm btn-void-order" data-id="${escapeHtml(o.id)}">🗑 Void (no payment)</button>
+               <button type="button" class="btn btn-green btn-sm btn-complete" data-id="${escapeHtml(o.id)}">✓ Complete & Generate Code</button>`
+            : ""
+        }
+        ${
+          status === "voided"
+            ? `<span class="admin-order-voided-note">Voided — excluded from revenue</span>`
             : ""
         }
         ${
@@ -342,6 +349,12 @@ document.addEventListener("click", (e) => {
   const chatBtn = e.target.closest(".btn-order-chat");
   if (chatBtn) {
     openAdminChatForOrder(chatBtn.dataset.orderId);
+    return;
+  }
+
+  const voidBtn = e.target.closest(".btn-void-order");
+  if (voidBtn) {
+    voidOrder(voidBtn.dataset.id);
   }
 });
 
@@ -352,6 +365,28 @@ async function completeOrder(orderId) {
   try {
     const code = await completeOrderApi(orderId);
     showToast(`Order completed! Code: ${code}`, "success", 6000);
+    await renderOrders();
+  } catch (err) {
+    showToast("Error: " + err.message, "error");
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function voidOrder(orderId) {
+  const order = allOrders.find((o) => o.id === orderId);
+  const priceLabel = order ? formatPrice(order.pricePHP) : "";
+
+  const confirmed = window.confirm(
+    `Void order ${orderId}?${priceLabel ? `\n\nThis removes ${priceLabel} from your revenue total.` : ""}\n\nThe customer will see: "Order has been voided due to no payment."`
+  );
+  if (!confirmed) return;
+
+  const btn = document.querySelector(`.btn-void-order[data-id="${orderId}"]`);
+  if (btn) btn.disabled = true;
+
+  try {
+    await voidOrderApi(orderId);
+    showToast("Order voided — revenue updated", "success");
     await renderOrders();
   } catch (err) {
     showToast("Error: " + err.message, "error");

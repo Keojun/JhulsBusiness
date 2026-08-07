@@ -221,6 +221,16 @@ async function completeOrderApi(orderId) {
   return code;
 }
 
+async function voidOrderApi(orderId) {
+  const res = await adminFetch("/api/orders", {
+    method: "POST",
+    body: JSON.stringify({ action: "void", orderId }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Failed to void order");
+  return data;
+}
+
 async function validateReviewCode(code) {
   try {
     const res = await customerFetch("/api/reviews?action=validate", {

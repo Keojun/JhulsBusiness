@@ -186,6 +186,11 @@ module.exports = async function handler(req, res) {
           }
         } else if (!customer) {
           return sendJson(res, 401, { error: "Login required" });
+        } else if (conversation.order_id) {
+          const ownership = await assertOrderOwnedByCustomer(conversation.order_id, customer);
+          if (!ownership.ok) {
+            return sendJson(res, ownership.status, { error: ownership.error });
+          }
         }
 
         const senderType = isAdmin ? "admin" : "customer";
