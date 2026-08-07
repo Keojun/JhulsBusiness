@@ -85,21 +85,29 @@
 
       <!-- Orders View -->
       <div id="admin-view-orders">
-      <div class="admin-stats" id="admin-stats">
+      <div class="admin-stats admin-stats-extended" id="admin-stats">
+        <div class="admin-stat-card stat-awaiting">
+          <span class="admin-stat-label">Awaiting Payment</span>
+          <span class="admin-stat-value" id="stat-awaiting">0</span>
+        </div>
         <div class="admin-stat-card stat-pending">
-          <span class="admin-stat-label">Pending</span>
+          <span class="admin-stat-label">Verify Payment</span>
           <span class="admin-stat-value" id="stat-pending">0</span>
+        </div>
+        <div class="admin-stat-card stat-processing">
+          <span class="admin-stat-label">Processing</span>
+          <span class="admin-stat-value" id="stat-processing">0</span>
         </div>
         <div class="admin-stat-card stat-completed">
           <span class="admin-stat-label">Completed</span>
           <span class="admin-stat-value" id="stat-completed">0</span>
         </div>
-        <div class="admin-stat-card stat-total">
-          <span class="admin-stat-label">Total Orders</span>
-          <span class="admin-stat-value" id="stat-total">0</span>
+        <div class="admin-stat-card stat-reviewed">
+          <span class="admin-stat-label">Reviewed</span>
+          <span class="admin-stat-value" id="stat-reviewed">0</span>
         </div>
         <div class="admin-stat-card stat-revenue">
-          <span class="admin-stat-label">Total Revenue</span>
+          <span class="admin-stat-label">Verified Revenue</span>
           <span class="admin-stat-value" id="stat-revenue">₱0</span>
         </div>
       </div>
@@ -107,7 +115,9 @@
       <div class="admin-toolbar">
         <div class="admin-filter-tabs" role="tablist">
           <button type="button" class="admin-filter-tab active" data-filter="all">All</button>
-          <button type="button" class="admin-filter-tab" data-filter="pending">Pending</button>
+          <button type="button" class="admin-filter-tab" data-filter="awaiting_payment">Awaiting Payment</button>
+          <button type="button" class="admin-filter-tab" data-filter="pending">Verify Payment</button>
+          <button type="button" class="admin-filter-tab" data-filter="processing">Processing</button>
           <button type="button" class="admin-filter-tab" data-filter="completed">Completed</button>
           <button type="button" class="admin-filter-tab" data-filter="voided">Voided</button>
         </div>
@@ -118,7 +128,24 @@
 
       <div id="orders-container">
         <div class="admin-loading" id="orders-loading">Loading orders…</div>
-        <div class="admin-orders-grid hidden" id="orders-grid"></div>
+        <div class="admin-orders-table-wrap hidden" id="orders-table-wrap">
+          <table class="admin-orders-table" id="orders-table">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Status</th>
+                <th>Username</th>
+                <th>Rerolls</th>
+                <th>Price</th>
+                <th>Payment</th>
+                <th>Ordered (PH)</th>
+                <th>Review Code</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="orders-table-body"></tbody>
+          </table>
+        </div>
         <div class="admin-empty hidden" id="orders-empty">
           <img src="images/jhul-waving.png" alt="" class="sticker admin-empty-sticker" aria-hidden="true" />
           <h3>No orders yet</h3>
@@ -171,6 +198,7 @@
   <div id="admin-toast" class="admin-toast hidden" role="status"></div>
 
   <script src="js/storage.js"></script>
+  <script src="js/order-status.js"></script>
   <script src="js/nav.js"></script>
   <script src="js/chat-live.js"></script>
   <script src="js/admin.js"></script>

@@ -83,7 +83,7 @@ function initAdmin() {
   if (searchInput) {
     searchInput.addEventListener("input", () => {
       searchQuery = searchInput.value.trim().toLowerCase();
-      renderOrderCards();
+      renderOrderTable();
     });
   }
 
@@ -92,7 +92,7 @@ function initAdmin() {
       document.querySelectorAll(".admin-filter-tab").forEach((t) => t.classList.remove("active"));
       tab.classList.add("active");
       currentFilter = tab.dataset.filter;
-      renderOrderCards();
+      renderOrderTable();
     });
   });
 
@@ -203,11 +203,11 @@ function paymentClass(method) {
 
 async function renderOrders() {
   const loading = document.getElementById("orders-loading");
-  const grid = document.getElementById("orders-grid");
+  const tableWrap = document.getElementById("orders-table-wrap");
   const empty = document.getElementById("orders-empty");
 
   loading.classList.remove("hidden");
-  grid.classList.add("hidden");
+  tableWrap.classList.add("hidden");
   empty.classList.add("hidden");
 
   try {
@@ -215,127 +215,134 @@ async function renderOrders() {
       (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
     );
     updateStats();
-    renderOrderCards();
+    renderOrderTable();
   } catch (err) {
     loading.classList.add("hidden");
-    grid.classList.remove("hidden");
-    grid.innerHTML = `<div class="admin-error">${escapeHtml(err.message)}</div>`;
+    tableWrap.classList.remove("hidden");
+    document.getElementById("orders-table-body").innerHTML =
+      `<tr><td colspan="9" class="admin-error">${escapeHtml(err.message)}</td></tr>`;
     showToast(err.message, "error");
   }
 }
 
 function updateStats() {
   const activeOrders = allOrders.filter((o) => o.status !== "voided");
+  const awaiting = activeOrders.filter((o) => o.status === "awaiting_payment").length;
   const pending = activeOrders.filter((o) => o.status === "pending").length;
+  const processing = activeOrders.filter((o) => o.status === "processing").length;
   const completed = activeOrders.filter((o) => o.status === "completed").length;
-  const revenue = activeOrders.reduce((sum, o) => sum + (Number(o.pricePHP) || 0), 0);
+  const reviewed = activeOrders.filter((o) => o.status === "reviewed").length;
+  const revenue = allOrders
+    .filter((o) => orderCountsTowardRevenue(o.status))
+    .reduce((sum, o) => sum + (Number(o.pricePHP) || 0), 0);
 
+  document.getElementById("stat-awaiting").textContent = awaiting;
   document.getElementById("stat-pending").textContent = pending;
+  document.getElementById("stat-processing").textContent = processing;
   document.getElementById("stat-completed").textContent = completed;
-  document.getElementById("stat-total").textContent = activeOrders.length;
+  document.getElementById("stat-reviewed").textContent = reviewed;
   document.getElementById("stat-revenue").textContent = formatPrice(revenue);
 }
 
 function getFilteredOrders() {
   return allOrders.filter((o) => {
-    const status = o.status || "pending";
-    if (currentFilter !== "all" && status !== currentFilter) return false;
+    if (!orderFilterMatchesTab(o, currentFilter)) return false;
 
     if (!searchQuery) return true;
-    const haystack = `${o.id} ${o.username}`.toLowerCase();
+    const haystack = `${o.id} ${o.username} ${o.status || ""}`.toLowerCase();
     return haystack.includes(searchQuery);
   });
 }
 
-function renderOrderCards() {
+function renderOrderTable() {
   const loading = document.getElementById("orders-loading");
-  const grid = document.getElementById("orders-grid");
+  const tableWrap = document.getElementById("orders-table-wrap");
   const empty = document.getElementById("orders-empty");
+  const tbody = document.getElementById("orders-table-body");
   const orders = getFilteredOrders();
 
   loading.classList.add("hidden");
 
   if (allOrders.length === 0) {
-    grid.classList.add("hidden");
+    tableWrap.classList.add("hidden");
     empty.classList.remove("hidden");
     return;
   }
 
   empty.classList.add("hidden");
-  grid.classList.remove("hidden");
+  tableWrap.classList.remove("hidden");
 
   if (orders.length === 0) {
-    grid.innerHTML = `
-      <div class="admin-no-results">
+    tbody.innerHTML = `
+      <tr><td colspan="9" class="admin-no-results">
         <p>No orders match your filter or search.</p>
         <button type="button" class="btn btn-outline btn-sm" onclick="clearFilters()">Clear filters</button>
-      </div>`;
+      </td></tr>`;
     return;
   }
 
-  grid.innerHTML = orders.map(renderOrderCard).join("");
+  tbody.innerHTML = orders.map(renderOrderRow).join("");
 }
 
-function renderOrderCard(o) {
+function renderOrderRow(o) {
   const status = o.status || "pending";
   const dateTime = getOrderDateTime(o);
+  const badgeClass = orderStatusBadgeClass(status);
 
   return `
-    <article class="admin-order-card status-border-${status}">
-      <div class="admin-order-card-top">
-        <code class="admin-order-id">${escapeHtml(o.id)}</code>
-        <span class="status-badge status-${status}">${status}</span>
-      </div>
+    <tr class="admin-order-row row-status-${status}">
+      <td><code class="admin-order-id">${escapeHtml(o.id)}</code></td>
+      <td><span class="status-badge ${badgeClass}">${escapeHtml(orderStatusLabel(status))}</span></td>
+      <td>${escapeHtml(o.username)}</td>
+      <td class="admin-order-rerolls">${o.rerollAmount}</td>
+      <td class="admin-order-price">${formatPrice(o.pricePHP)}</td>
+      <td><span class="payment-badge ${paymentClass(o.paymentMethod)}">${paymentLabel(o.paymentMethod)}</span></td>
+      <td><time datetime="${escapeHtml(o.createdAt || "")}">${escapeHtml(dateTime)}</time></td>
+      <td>${o.reviewCode ? `<code class="admin-review-code">${escapeHtml(o.reviewCode)}</code>` : "—"}</td>
+      <td class="admin-order-actions-cell">${renderOrderActions(o)}</td>
+    </tr>`;
+}
 
-      <div class="admin-order-meta">
-        <div class="admin-order-field">
-          <span class="admin-order-label">Username</span>
-          <span class="admin-order-value">${escapeHtml(o.username)}</span>
-        </div>
-        <div class="admin-order-field">
-          <span class="admin-order-label">Rerolls</span>
-          <span class="admin-order-value admin-order-rerolls">${o.rerollAmount}</span>
-        </div>
-        <div class="admin-order-field">
-          <span class="admin-order-label">Price</span>
-          <span class="admin-order-value admin-order-price">${formatPrice(o.pricePHP)}</span>
-        </div>
-        <div class="admin-order-field">
-          <span class="admin-order-label">Payment</span>
-          <span class="payment-badge ${paymentClass(o.paymentMethod)}">${paymentLabel(o.paymentMethod)}</span>
-        </div>
-      </div>
+function renderOrderActions(o) {
+  const status = o.status || "pending";
+  const parts = [];
 
-      <div class="admin-order-datetime">
-        <span class="admin-order-label">Ordered (PH Time)</span>
-        <time datetime="${escapeHtml(o.createdAt || "")}">${escapeHtml(dateTime)}</time>
-      </div>
+  if (status === "awaiting_payment") {
+    parts.push(
+      `<button type="button" class="btn btn-outline btn-sm btn-void-order" data-id="${escapeHtml(o.id)}">Void</button>`
+    );
+  }
 
-      <div class="admin-order-actions">
-        ${
-          status === "pending"
-            ? `<button type="button" class="btn btn-outline btn-sm btn-void-order" data-id="${escapeHtml(o.id)}">🗑 Void (no payment)</button>
-               <button type="button" class="btn btn-green btn-sm btn-complete" data-id="${escapeHtml(o.id)}">✓ Complete & Generate Code</button>`
-            : ""
-        }
-        ${
-          status === "voided"
-            ? `<span class="admin-order-voided-note">Voided — excluded from revenue</span>`
-            : ""
-        }
-        ${
-          o.reviewCode
-            ? `<button type="button" class="btn btn-outline btn-sm btn-copy-code" data-code="${escapeHtml(o.reviewCode)}">📋 ${escapeHtml(o.reviewCode)}</button>`
-            : ""
-        }
-        ${
-          o.customerId && status !== "voided"
-            ? `<button type="button" class="btn btn-outline btn-sm btn-order-chat" data-order-id="${escapeHtml(o.id)}">💬 Message Customer</button>`
-            : ""
-        }
-      </div>
-    </article>
-  `;
+  if (status === "pending") {
+    parts.push(
+      `<button type="button" class="btn btn-outline btn-sm btn-void-order" data-id="${escapeHtml(o.id)}">Void</button>`,
+      `<button type="button" class="btn btn-primary btn-sm btn-verify" data-id="${escapeHtml(o.id)}">✓ Verify Payment</button>`
+    );
+  }
+
+  if (status === "processing") {
+    parts.push(
+      `<button type="button" class="btn btn-green btn-sm btn-complete" data-id="${escapeHtml(o.id)}">Complete & Code</button>`
+    );
+  }
+
+  if (o.reviewCode) {
+    parts.push(
+      `<button type="button" class="btn btn-outline btn-sm btn-copy-code" data-code="${escapeHtml(o.reviewCode)}">Copy Code</button>`
+    );
+  }
+
+  if (o.customerId && status !== "voided") {
+    parts.push(
+      `<button type="button" class="btn btn-outline btn-sm btn-order-chat" data-order-id="${escapeHtml(o.id)}">💬 Chat</button>`
+    );
+  }
+
+  if (status === "voided") {
+    parts.push(`<span class="admin-order-voided-note">Voided</span>`);
+  }
+
+  return parts.join(" ") || "—";
 }
 
 function clearFilters() {
@@ -345,7 +352,7 @@ function clearFilters() {
   document.querySelectorAll(".admin-filter-tab").forEach((t) => {
     t.classList.toggle("active", t.dataset.filter === "all");
   });
-  renderOrderCards();
+  renderOrderTable();
 }
 
 window.clearFilters = clearFilters;
@@ -354,6 +361,12 @@ document.addEventListener("click", (e) => {
   const completeBtn = e.target.closest(".btn-complete");
   if (completeBtn) {
     completeOrder(completeBtn.dataset.id);
+    return;
+  }
+
+  const verifyBtn = e.target.closest(".btn-verify");
+  if (verifyBtn) {
+    verifyOrder(verifyBtn.dataset.id);
     return;
   }
 
@@ -374,6 +387,20 @@ document.addEventListener("click", (e) => {
     voidOrder(voidBtn.dataset.id);
   }
 });
+
+async function verifyOrder(orderId) {
+  const btn = document.querySelector(`.btn-verify[data-id="${orderId}"]`);
+  if (btn) btn.disabled = true;
+
+  try {
+    await verifyOrderApi(orderId);
+    showToast("Payment verified — order is now Processing", "success");
+    await renderOrders();
+  } catch (err) {
+    showToast("Error: " + err.message, "error");
+    if (btn) btn.disabled = false;
+  }
+}
 
 async function completeOrder(orderId) {
   const btn = document.querySelector(`.btn-complete[data-id="${orderId}"]`);

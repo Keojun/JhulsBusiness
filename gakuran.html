@@ -129,21 +129,35 @@
       </div>
     </section>
 
-    <!-- Leave a Review — hidden until user confirms instructions -->
+    <!-- Leave a Review — shown after order flow / when code is ready -->
     <section class="section hidden section-with-sticker" id="leave-review">
       <img src="images/jhul-waving.png" alt="" class="sticker sticker-md section-sticker-side left sticker-float" aria-hidden="true" />
-      <div class="card card-green leave-review-card card-with-sticker">
+      <div class="card card-green leave-review-card card-with-sticker review-required-banner">
         <img src="images/jhul-happy.png" alt="" class="sticker card-sticker card-sticker-tr" style="width:75px;" aria-hidden="true" />
-        <h2 class="section-title" style="margin-bottom:0.5rem;">⭐ Leave a Review</h2>
-        <p class="section-subtitle" style="margin-bottom:1.25rem;">After Jhul completes your order, he'll send you a review code. Enter it here to leave a verified review.</p>
+        <div class="review-required-header">
+          <span class="review-required-badge">Required after every order</span>
+          <h2 class="section-title" style="margin-bottom:0.5rem;">⭐ Leave Your Verified Review</h2>
+        </div>
+        <p class="section-subtitle" style="margin-bottom:1rem;">When Jhul completes your order, you'll receive a <strong>review code</strong> in chat. Enter it below to unlock the review form — this helps other customers trust RBXDISC.</p>
+
+        <div class="review-code-steps">
+          <h3 class="review-code-steps-title">How to use your review code</h3>
+          <ol class="review-code-steps-list">
+            <li><strong>Wait for completion</strong> — Jhul finishes your rerolls and sends a code like <code>JHUL-ABC123</code> in chat.</li>
+            <li><strong>Copy the code exactly</strong> — letters and numbers, including the <code>JHUL-</code> prefix.</li>
+            <li><strong>Paste below</strong> and tap <strong>Unlock Review Form</strong>.</li>
+            <li><strong>Rate & write your review</strong>, then submit. One code = one review.</li>
+          </ol>
+        </div>
 
         <div id="review-locked">
           <form id="unlock-review-form" style="max-width:400px;margin:0 auto;">
             <div class="form-group">
-              <label for="review-code">Review Code from Jhul</label>
+              <label for="review-code">Review Code from Jhul <span class="label-required">*</span></label>
               <input type="text" id="review-code" placeholder="e.g. JHUL-ABC123" required autocomplete="off" style="text-transform:uppercase;" />
+              <p class="field-hint">Codes are sent in chat after your order is marked complete. Already have one? Enter it now.</p>
             </div>
-            <button type="submit" class="btn btn-green" style="width:100%;">Unlock Review Form</button>
+            <button type="submit" class="btn btn-green btn-lg" style="width:100%;">🔓 Unlock Review Form</button>
           </form>
         </div>
 
@@ -252,8 +266,65 @@
       <button type="button" id="download-invoice" class="btn btn-primary download-btn">
         ⬇ Download Invoice
       </button>
-      <button type="button" id="btn-message-jhul-order" class="btn btn-green hidden" style="width:100%;margin-top:0.75rem;">
-        💬 Message Jhul About This Order
+      <button type="button" id="btn-message-jhul-order" class="btn btn-green btn-lg" style="width:100%;margin-top:0.75rem;">
+        💬 Message Jhul in Chat — Required
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal: Chat required after order -->
+  <div id="modal-chat-required" class="modal-overlay modal-no-close hidden" role="dialog" aria-modal="true">
+    <div class="modal-box modal-box-lg">
+      <div class="modal-header">
+        <img src="images/jhul-happy.png" alt="" class="sticker sticker-md" style="width:80px;margin-bottom:0.5rem;" aria-hidden="true" />
+        <h2>💬 Message Jhul About Your Order</h2>
+        <p><strong>This step is required.</strong> Use the in-app chat so Jhul can verify payment and deliver your rerolls.</p>
+      </div>
+      <div class="notice notice-info">
+        <span class="notice-icon">ℹ️</span>
+        <div>Open chat, say hi, and mention your order ID. Jhul may also message you first when your payment is verified.</div>
+      </div>
+      <button type="button" id="btn-chat-required-open" class="btn btn-green btn-lg" style="width:100%;margin-top:1.25rem;padding:1rem;">
+        💬 Open Chat with Jhul Now
+      </button>
+      <button type="button" id="btn-chat-required-instructions" class="btn btn-outline" style="width:100%;margin-top:0.75rem;">
+        📋 Read Full Order Instructions First
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal: Processing — payment verified -->
+  <div id="modal-processing-prompt" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-box modal-box-lg">
+      <button type="button" class="modal-close" data-close="modal-processing-prompt" aria-label="Close">&times;</button>
+      <div class="modal-header">
+        <img src="images/jhul-waving.png" alt="" class="sticker sticker-md" aria-hidden="true" />
+        <h2>✅ Payment Verified — Jhul Is Working on Your Order!</h2>
+        <p id="processing-prompt-order-id">Your order is now being processed.</p>
+      </div>
+      <p class="processing-prompt-text">Don't miss your rerolls — <strong>message Jhul in chat</strong> so you can coordinate delivery on the private server.</p>
+      <button type="button" id="btn-processing-open-chat" class="btn btn-green btn-lg" style="width:100%;padding:1rem;">
+        💬 Message Jhul Now
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal: Review required after completion -->
+  <div id="modal-review-required" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal-box modal-box-lg">
+      <button type="button" class="modal-close" data-close="modal-review-required" aria-label="Close">&times;</button>
+      <div class="modal-header">
+        <h2>🎉 Order Complete — Leave Your Review!</h2>
+        <p>Every completed order needs a verified review. Use the code Jhul sent you:</p>
+      </div>
+      <div class="review-code-display" id="modal-review-code-display">JHUL-XXXXXX</div>
+      <ol class="review-code-steps-list modal-review-steps">
+        <li>Scroll to <strong>Leave Your Verified Review</strong> on this page (or tap the button below).</li>
+        <li>Paste your code in the <strong>Review Code</strong> field.</li>
+        <li>Tap <strong>Unlock Review Form</strong>, rate 1–5 stars, and submit.</li>
+      </ol>
+      <button type="button" id="btn-go-to-review" class="btn btn-primary btn-lg" style="width:100%;padding:1rem;">
+        ⭐ Go to Review Section
       </button>
     </div>
   </div>
@@ -319,28 +390,32 @@
               <span><strong>Step 1:</strong> You already paid via <strong>GCash or Maya</strong> using the QR code. Keep your payment proof ready.</span>
             </li>
             <li>
-              <span><strong>Step 2:</strong> <strong>Download your invoice</strong> and message Jhul on Facebook Messenger — send the invoice image.
+              <span><strong>Step 2:</strong> <strong>Message Jhul in the website chat</strong> (tap the green Chat button) — send your order ID and say hi. This is the fastest way to get verified.
+              </span>
+            </li>
+            <li>
+              <span><strong>Step 3:</strong> <strong>Download your invoice</strong> and you can also send it on Facebook Messenger if needed.
                 <br><a href="https://www.facebook.com/jhulcammayo" target="_blank" rel="noopener" style="color:var(--orange-deep);font-weight:600;">→ facebook.com/jhulcammayo</a>
               </span>
             </li>
             <li>
-              <span><strong>Step 3:</strong> <strong>Join this Private Server</strong> on Roblox:
+              <span><strong>Step 4:</strong> <strong>Join this Private Server</strong> on Roblox:
                 <br><a href="https://www.roblox.com/share?code=d10fc61ed1ae19489a6d915070f326b2&type=Server" target="_blank" rel="noopener" style="color:var(--orange-deep);font-weight:600;word-break:break-all;">→ Join Private Server</a>
               </span>
             </li>
             <li>
-              <span><strong>Step 4:</strong> <strong>Wait for Jhul</strong> to confirm your order. Do not send extra receipts unexpectedly.</span>
+              <span><strong>Step 5:</strong> <strong>Wait for Jhul</strong> to verify your payment. You'll get a chat message when it's confirmed.</span>
             </li>
             <li>
-              <span><strong>Step 5:</strong> <strong>Stay active within the day</strong> so you can claim your rerolls when Jhul is ready.</span>
+              <span><strong>Step 6:</strong> <strong>Stay active within the day</strong> so you can claim your rerolls when Jhul is ready.</span>
             </li>
             <li>
-              <span><strong>Step 6:</strong> <strong>Can't join the server?</strong> Wait for Jhul to chat you on Messenger/Facebook and send your invoice there.
+              <span><strong>Step 7:</strong> <strong>Can't join the server?</strong> Chat Jhul on the website or Messenger and send your invoice there.
                 <br><a href="https://www.facebook.com/jhulcammayo" target="_blank" rel="noopener" style="color:var(--orange-deep);font-weight:600;">→ facebook.com/jhulcammayo</a>
               </span>
             </li>
             <li>
-              <span><strong>Step 7:</strong> After your order is done, Jhul will send you a <strong>review code</strong> to use below.</span>
+              <span><strong>Step 8:</strong> After your order is done, Jhul sends a <strong>review code</strong> — you <strong>must</strong> leave a verified review using that code.</span>
             </li>
           </ol>
 
@@ -364,10 +439,12 @@
           <p>Please confirm you understand the order process:</p>
           <ul class="confirm-checklist">
             <li>I paid the exact amount via GCash or Maya</li>
-            <li>I will send the invoice to Jhul on Messenger</li>
+            <li>I will message Jhul in the website chat about my order</li>
+            <li>I will send the invoice to Jhul on Messenger if needed</li>
             <li>I will join the Private Server (or wait for Jhul on Messenger if I can't join)</li>
             <li>I will stay active within the day to claim my rerolls</li>
             <li>I will wait for Jhul to confirm before expecting rerolls</li>
+            <li>I will leave a verified review when I receive my review code</li>
             <li>All details are final — <strong>no refunds</strong></li>
           </ul>
         </div>
@@ -396,6 +473,7 @@
   </footer>
 
   <script src="js/storage.js"></script>
+  <script src="js/order-status.js"></script>
   <script src="js/nav.js"></script>
   <script src="js/guard.js"></script>
   <script src="js/chat-live.js"></script>

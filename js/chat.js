@@ -235,7 +235,7 @@ async function showOrderPickerState() {
         <span class="chat-order-pick-meta">${
           isVoided
             ? "Voided — no payment"
-            : `${escapeHtml(String(o.rerollAmount))} rerolls · ${escapeHtml(o.status || "pending")}`
+            : `${escapeHtml(String(o.rerollAmount))} rerolls · ${escapeHtml(orderStatusLabel(o.status || "pending"))}`
         }</span>
         <span class="chat-order-pick-date">${escapeHtml(o.date || "")}</span>
       </button>`;
@@ -575,7 +575,45 @@ function setPendingOrderForChat(order) {
   const btn = document.getElementById("btn-message-jhul-order");
   if (btn) btn.classList.remove("hidden");
   showChatFab(true);
+  if (typeof window.setOrderChatRef === "function") {
+    window.setOrderChatRef(order);
+  }
 }
+
+let processingPromptOrderId = null;
+
+function showProcessingPrompt(order) {
+  if (!order || order.status !== "processing") return;
+
+  const key = `rbxdisc_processing_prompt_${order.id}`;
+  if (sessionStorage.getItem(key) === "1") return;
+  if (document.getElementById("chat-panel") && !document.getElementById("chat-panel").classList.contains("hidden")) {
+    return;
+  }
+
+  processingPromptOrderId = order.id;
+  sessionStorage.setItem(key, "1");
+
+  const idEl = document.getElementById("processing-prompt-order-id");
+  if (idEl) {
+    idEl.textContent = `Order ${order.id} · ${order.rerollAmount} rerolls — payment verified!`;
+  }
+
+  if (typeof openModal === "function") {
+    openModal("modal-processing-prompt");
+  }
+}
+
+function initProcessingPromptModal() {
+  document.getElementById("btn-processing-open-chat")?.addEventListener("click", async () => {
+    if (typeof closeModal === "function") closeModal("modal-processing-prompt");
+    const orders = await getCustomerOrders();
+    const order = orders.find((o) => o.id === processingPromptOrderId) || pendingOrderForChat;
+    openChatPanel(order || null);
+  });
+}
+
+window.showProcessingPrompt = showProcessingPrompt;
 
 function startPolling() {
   stopPolling();
@@ -599,4 +637,7 @@ window.setPendingOrderForChat = setPendingOrderForChat;
 window.showChatFab = showChatFab;
 window.startCustomerNotifyPoll = startCustomerNotifyPoll;
 
-document.addEventListener("DOMContentLoaded", initChat);
+document.addEventListener("DOMContentLoaded", () => {
+  initChat();
+  initProcessingPromptModal();
+});

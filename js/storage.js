@@ -132,10 +132,37 @@ async function addOrder(order) {
     });
     const data = await res.json();
     if (res.ok) return { ...data, savedToDb: true };
+    if (res.status === 409 && data.existingOrderId) {
+      const err = new Error(data.error || "Duplicate order");
+      err.existingOrderId = data.existingOrderId;
+      err.status = 409;
+      throw err;
+    }
     return { ...order, savedToDb: false, dbError: data.error || `HTTP ${res.status}` };
   } catch (err) {
+    if (err.existingOrderId) throw err;
     return { ...order, savedToDb: false, dbError: err.message || "Network error" };
   }
+}
+
+async function confirmPaymentApi(orderId, paymentMethod) {
+  const res = await customerFetch("/api/orders", {
+    method: "POST",
+    body: JSON.stringify({ action: "confirm_payment", orderId, paymentMethod }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Failed to confirm payment");
+  return data;
+}
+
+async function verifyOrderApi(orderId) {
+  const res = await adminFetch("/api/orders", {
+    method: "POST",
+    body: JSON.stringify({ action: "verify", orderId }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Failed to verify payment");
+  return data;
 }
 
 async function getOrders() {
