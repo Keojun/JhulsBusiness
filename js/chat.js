@@ -135,7 +135,13 @@ function openChatPanel(orderContext = null) {
     document.body.classList.add("chat-open");
 
     if (orderContext) {
-      await openOrderChat(orderContext);
+      const orders = await getCustomerOrders();
+      const fresh = orders.find((o) => o.id === orderContext.id) || orderContext;
+      if (fresh.status === "voided") {
+        await showVoidedOrderState(fresh);
+      } else {
+        await openOrderChat(fresh);
+      }
     } else {
       await loadConversations();
     }
@@ -159,6 +165,34 @@ function closeChatPanel() {
       showChatFab(false);
       startCustomerNotifyPoll();
     }
+  });
+}
+
+function showVoidedOrderState(order) {
+  const threadEl = document.getElementById("chat-messages");
+  const headerEl = document.getElementById("chat-thread-header");
+  if (!threadEl) return;
+
+  activeConversationId = null;
+  setChatComposerEnabled(false, "This order was voided — messaging is closed");
+
+  if (headerEl) {
+    headerEl.textContent = `Order ${order.id} · Voided`;
+  }
+
+  threadEl.innerHTML = `
+    <div class="chat-empty-thread chat-voided-notice">
+      <img src="images/jhul-sad.png" alt="" class="sticker" style="width:72px;" />
+      <h4>Order voided</h4>
+      <p><strong>Order has been voided due to no payment.</strong></p>
+      <p class="chat-voided-order-id">${escapeHtml(order.id)} · ${escapeHtml(String(order.rerollAmount || ""))} rerolls</p>
+      <p>If you already paid, contact Jhul on <a href="https://www.facebook.com/jhulcammayo" target="_blank" rel="noopener" class="chat-link">Facebook Messenger</a>.</p>
+      <a href="#order-form" class="btn btn-primary btn-sm chat-order-cta" id="chat-go-order">Place a new order</a>
+    </div>`;
+
+  document.getElementById("chat-go-order")?.addEventListener("click", () => {
+    closeChatPanel();
+    document.getElementById("order-form")?.scrollIntoView({ behavior: "smooth" });
   });
 }
 
@@ -193,14 +227,19 @@ async function showOrderPickerState() {
     }
 
     const items = orders
-      .map(
-        (o) => `
-      <button type="button" class="chat-order-pick" data-order-id="${escapeHtml(o.id)}">
+      .map((o) => {
+        const isVoided = o.status === "voided";
+        return `
+      <button type="button" class="chat-order-pick ${isVoided ? "chat-order-pick-voided" : ""}" data-order-id="${escapeHtml(o.id)}" data-voided="${isVoided ? "1" : "0"}">
         <span class="chat-order-pick-id">${escapeHtml(o.id)}</span>
-        <span class="chat-order-pick-meta">${escapeHtml(o.rerollAmount)} rerolls · ${escapeHtml(o.status || "pending")}</span>
+        <span class="chat-order-pick-meta">${
+          isVoided
+            ? "Voided — no payment"
+            : `${escapeHtml(String(o.rerollAmount))} rerolls · ${escapeHtml(o.status || "pending")}`
+        }</span>
         <span class="chat-order-pick-date">${escapeHtml(o.date || "")}</span>
-      </button>`
-      )
+      </button>`;
+      })
       .join("");
 
     threadEl.innerHTML = `
@@ -214,7 +253,12 @@ async function showOrderPickerState() {
     threadEl.querySelectorAll(".chat-order-pick").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const order = orders.find((o) => o.id === btn.dataset.orderId);
-        if (order) await openOrderChat(order);
+        if (!order) return;
+        if (order.status === "voided" || btn.dataset.voided === "1") {
+          showVoidedOrderState(order);
+          return;
+        }
+        await openOrderChat(order);
       });
     });
   } catch (err) {
@@ -329,9 +373,10 @@ async function loadMessages(conversationId, options = {}) {
   if (!threadEl) return;
 
   try {
+    let conv = null;
     if (!options.silent) {
       const convs = orderLinkedConversations(await getConversations());
-      const conv = convs.find((c) => c.id === conversationId);
+      conv = convs.find((c) => c.id === conversationId);
       if (headerEl && conv) {
         headerEl.textContent = conv.orderId
           ? `Order ${conv.orderId} · ${conv.rerollAmount ? conv.rerollAmount + " rerolls" : conv.subject}`
@@ -340,6 +385,15 @@ async function loadMessages(conversationId, options = {}) {
         headerEl.textContent = "Choose an order";
         await showOrderPickerState();
         return;
+      }
+
+      if (conv?.orderId) {
+        const orders = await getCustomerOrders();
+        const order = orders.find((o) => o.id === conv.orderId);
+        if (order?.status === "voided") {
+          showVoidedOrderState(order);
+          return;
+        }
       }
     }
 
@@ -487,6 +541,14 @@ async function sendCustomerMessage() {
 
 async function openOrderChat(order) {
   try {
+    const orders = await getCustomerOrders();
+    const fresh = orders.find((o) => o.id === order.id) || order;
+
+    if (fresh.status === "voided") {
+      showVoidedOrderState(fresh);
+      return;
+    }
+
     const convs = orderLinkedConversations(await getConversations());
     let conv = convs.find((c) => c.orderId === order.id);
     if (!conv) {

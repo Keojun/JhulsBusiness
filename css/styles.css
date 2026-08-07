@@ -1654,6 +1654,11 @@ body.nav-open {
   border-left: 4px solid var(--green-deep);
 }
 
+.admin-order-card.status-border-voided {
+  border-left: 4px solid #c0392b;
+  opacity: 0.92;
+}
+
 .admin-order-card-top {
   display: flex;
   align-items: center;
@@ -1759,6 +1764,29 @@ body.nav-open {
   min-width: 140px;
 }
 
+.btn-void-order {
+  border-color: #e74c3c !important;
+  color: #c0392b !important;
+  background: #fff5f5 !important;
+}
+
+.btn-void-order:hover {
+  background: #fdecea !important;
+}
+
+.admin-order-voided-note {
+  display: block;
+  width: 100%;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #c0392b;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  background: #fdecea;
+  border: 1px solid #f5c6cb;
+  text-align: center;
+}
+
 .admin-order-actions .btn-copy-code {
   flex: 1;
   min-width: 140px;
@@ -1862,6 +1890,11 @@ body.nav-open {
 .status-completed {
   background: var(--green-pastel);
   color: #2d5a3d;
+}
+
+.status-voided {
+  background: #fdecea;
+  color: #c0392b;
 }
 
 .status-reviewed {
@@ -3203,6 +3236,39 @@ body.nav-open {
 .chat-order-pick:active {
   border-color: var(--orange-mid);
   background: var(--orange-light);
+}
+
+.chat-order-pick-voided {
+  border-color: #f5c6cb;
+  background: #fff8f8;
+}
+
+.chat-order-pick-voided:hover,
+.chat-order-pick-voided:active {
+  border-color: #e74c3c;
+  background: #fdecea;
+}
+
+.chat-order-pick-voided .chat-order-pick-meta {
+  color: #c0392b;
+  font-weight: 800;
+}
+
+.chat-voided-notice h4 {
+  font-size: 1.05rem;
+  margin: 0.65rem 0 0.35rem;
+  color: #c0392b;
+}
+
+.chat-voided-notice p {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 0.65rem;
+}
+
+.chat-voided-order-id {
+  font-weight: 700;
+  color: var(--dark-soft);
 }
 
 .chat-order-pick-id {
