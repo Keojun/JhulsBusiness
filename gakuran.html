@@ -23,17 +23,35 @@
           <span class="logo-sub">by Jhul Cammayo</span>
         </span>
       </a>
-      <nav class="nav-links">
-        <a href="index.html">Home</a>
-        <a href="gakuran.html" class="active">Gakuran Shop</a>
-        <a href="#leave-review" id="nav-leave-review" class="hidden">Leave Review</a>
-        <span class="auth-user-pill">👤 <span id="auth-user-label">User</span></span>
-        <button type="button" class="btn btn-green btn-sm" id="btn-open-chat">💬 Chat Jhul</button>
-        <button type="button" class="btn btn-outline btn-sm" id="btn-logout-customer">Logout</button>
-        <a href="https://www.facebook.com/jhulcammayo" target="_blank" rel="noopener" class="social-pill fb">Facebook</a>
-        <a href="https://t.me/+zT-UnUY2CDUzNDU1" target="_blank" rel="noopener" class="social-pill tg">Telegram</a>
+      <div class="header-actions">
+        <button type="button" class="header-icon-btn hidden" id="btn-header-chat" aria-label="Chat with Jhul">💬</button>
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+        </button>
+      </div>
+      <nav class="nav-links" id="site-nav">
+        <div class="nav-section">
+          <span class="nav-section-label">Menu</span>
+          <a href="index.html">Home</a>
+          <a href="gakuran.html" class="active">Gakuran Shop</a>
+          <a href="#leave-review" id="nav-leave-review" class="hidden">Leave Review</a>
+        </div>
+        <div class="nav-section nav-section-account">
+          <span class="nav-section-label">Account</span>
+          <span class="auth-user-pill">👤 <span id="auth-user-label">User</span></span>
+          <button type="button" class="btn btn-green btn-sm nav-chat-btn" id="btn-open-chat">💬 Chat Jhul</button>
+          <button type="button" class="btn btn-outline btn-sm" id="btn-logout-customer">Logout</button>
+        </div>
+        <div class="nav-section nav-section-social">
+          <span class="nav-section-label">Connect</span>
+          <a href="https://www.facebook.com/jhulcammayo" target="_blank" rel="noopener" class="social-pill fb">Facebook</a>
+          <a href="https://t.me/+zT-UnUY2CDUzNDU1" target="_blank" rel="noopener" class="social-pill tg">Telegram</a>
+        </div>
       </nav>
     </div>
+    <div class="nav-backdrop hidden" id="nav-backdrop" aria-hidden="true"></div>
   </header>
 
   <!-- Gakuran branding banner -->
@@ -219,6 +237,15 @@
     </div>
   </div>
 
+  <!-- Floating chat bubble -->
+  <div class="chat-fab-wrap hidden" id="chat-fab-wrap" aria-live="polite">
+    <p class="chat-fab-hint hidden" id="chat-fab-hint">Tap to message Jhul about your order!</p>
+    <button type="button" id="chat-fab" class="chat-fab" aria-label="Chat with Jhul">
+      <img src="images/jhul-happy.png" alt="" class="chat-fab-avatar" aria-hidden="true" />
+      <span class="chat-fab-label">Chat Jhul</span>
+    </button>
+  </div>
+
   <!-- Chat Panel -->
   <aside id="chat-panel" class="chat-panel hidden" aria-label="Chat with Jhul">
     <div class="chat-panel-header">
@@ -339,6 +366,7 @@
   </footer>
 
   <script src="js/storage.js"></script>
+  <script src="js/nav.js"></script>
   <script src="js/guard.js"></script>
   <script src="js/chat.js"></script>
   <script src="js/order.js"></script>
