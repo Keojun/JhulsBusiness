@@ -140,6 +140,14 @@ async function getOrders() {
   return getOrdersLocal();
 }
 
+async function getCustomerOrders() {
+  try {
+    const res = await customerFetch("/api/orders");
+    if (res.ok) return await res.json();
+  } catch (_) {}
+  return [];
+}
+
 async function verifyAdminPassword(password) {
   try {
     const res = await fetch("/api/auth?action=admin-login", {

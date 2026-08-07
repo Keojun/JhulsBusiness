@@ -228,15 +228,20 @@ module.exports = async function handler(req, res) {
     if (req.method === "POST") {
       if (!customer) return sendJson(res, 401, { error: "Login required to start a chat" });
 
-      const subject = String(body.subject || "General").trim() || "General";
       const orderId = body.orderId || body.order_id || null;
 
-      if (orderId) {
-        const ownership = await assertOrderOwnedByCustomer(orderId, customer);
-        if (!ownership.ok) {
-          return sendJson(res, ownership.status, { error: ownership.error });
-        }
+      if (!orderId) {
+        return sendJson(res, 400, {
+          error: "Place an order first — chat is linked to your order so Jhul knows what you need.",
+        });
       }
+
+      const ownership = await assertOrderOwnedByCustomer(orderId, customer);
+      if (!ownership.ok) {
+        return sendJson(res, ownership.status, { error: ownership.error });
+      }
+
+      const subject = String(body.subject || `Order ${orderId}`).trim() || `Order ${orderId}`;
 
       const rows = await dbRequest("POST", "conversations", {
         body: {

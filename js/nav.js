@@ -6,6 +6,7 @@ function initMobileNav() {
   const toggle = document.getElementById("nav-toggle");
   const nav = document.getElementById("site-nav");
   const backdrop = document.getElementById("nav-backdrop");
+  const drawerClose = document.getElementById("nav-drawer-close");
   if (!toggle || !nav) return;
 
   function setOpen(open) {
@@ -18,17 +19,17 @@ function initMobileNav() {
   }
 
   toggle.addEventListener("click", () => setOpen(!nav.classList.contains("is-open")));
-
+  drawerClose?.addEventListener("click", () => setOpen(false));
   backdrop?.addEventListener("click", () => setOpen(false));
 
   nav.querySelectorAll("a, button").forEach((el) => {
     el.addEventListener("click", () => {
-      if (window.innerWidth <= 768) setOpen(false);
+      if (window.innerWidth <= 900) setOpen(false);
     });
   });
 
   window.addEventListener("resize", () => {
-    if (window.innerWidth > 768) setOpen(false);
+    if (window.innerWidth > 900) setOpen(false);
   });
 
   document.addEventListener("keydown", (e) => {

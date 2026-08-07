@@ -23,9 +23,38 @@
           <span class="logo-sub">by Jhul Cammayo</span>
         </span>
       </a>
+
+      <nav class="nav-links" id="site-nav" aria-label="Site navigation">
+        <div class="nav-drawer-header">
+          <span class="nav-drawer-title">Menu</span>
+          <button type="button" class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+        </div>
+
+        <div class="nav-group nav-group-pages">
+          <a href="index.html">Home</a>
+          <a href="gakuran.html" class="active">Shop</a>
+          <a href="#leave-review" id="nav-leave-review" class="hidden">Leave Review</a>
+        </div>
+
+        <div class="nav-group nav-group-actions">
+          <span class="auth-user-pill">👤 <span id="auth-user-label">User</span></span>
+          <button type="button" class="nav-action-link nav-action-chat hidden" id="btn-open-chat">
+            <span class="nav-action-icon" aria-hidden="true">💬</span>
+            <span>Chat Jhul</span>
+            <span id="nav-chat-badge" class="chat-notify-badge hidden" aria-hidden="true">0</span>
+          </button>
+          <button type="button" class="nav-action-link nav-action-muted" id="btn-logout-customer">Sign out</button>
+        </div>
+
+        <div class="nav-group nav-group-social">
+          <a href="https://www.facebook.com/jhulcammayo" target="_blank" rel="noopener" class="social-icon fb" aria-label="Facebook"><span aria-hidden="true">f</span></a>
+          <a href="https://t.me/+zT-UnUY2CDUzNDU1" target="_blank" rel="noopener" class="social-icon tg" aria-label="Telegram"><span aria-hidden="true">✈</span></a>
+        </div>
+      </nav>
+
       <div class="header-actions">
         <button type="button" class="header-icon-btn hidden" id="btn-header-chat" aria-label="Chat with Jhul">
-          💬
+          <span aria-hidden="true">💬</span>
           <span id="header-chat-badge" class="chat-notify-badge hidden" aria-hidden="true">0</span>
         </button>
         <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">
@@ -34,28 +63,6 @@
           <span class="nav-toggle-bar"></span>
         </button>
       </div>
-      <nav class="nav-links" id="site-nav">
-        <div class="nav-section">
-          <span class="nav-section-label">Menu</span>
-          <a href="index.html">Home</a>
-          <a href="gakuran.html" class="active">Gakuran Shop</a>
-          <a href="#leave-review" id="nav-leave-review" class="hidden">Leave Review</a>
-        </div>
-        <div class="nav-section nav-section-account">
-          <span class="nav-section-label">Account</span>
-          <span class="auth-user-pill">👤 <span id="auth-user-label">User</span></span>
-          <button type="button" class="btn btn-green btn-sm nav-chat-btn" id="btn-open-chat">
-            💬 Chat Jhul
-            <span id="nav-chat-badge" class="chat-notify-badge hidden" aria-hidden="true">0</span>
-          </button>
-          <button type="button" class="btn btn-outline btn-sm" id="btn-logout-customer">Logout</button>
-        </div>
-        <div class="nav-section nav-section-social">
-          <span class="nav-section-label">Connect</span>
-          <a href="https://www.facebook.com/jhulcammayo" target="_blank" rel="noopener" class="social-pill fb">Facebook</a>
-          <a href="https://t.me/+zT-UnUY2CDUzNDU1" target="_blank" rel="noopener" class="social-pill tg">Telegram</a>
-        </div>
-      </nav>
     </div>
     <div class="nav-backdrop hidden" id="nav-backdrop" aria-hidden="true"></div>
   </header>
@@ -256,23 +263,31 @@
   <!-- Chat Panel -->
   <aside id="chat-panel" class="chat-panel hidden" aria-label="Chat with Jhul">
     <div class="chat-panel-header">
-      <div>
+      <div class="chat-panel-header-text">
         <h3>💬 Chat with Jhul</h3>
-        <p id="chat-thread-header">General</p>
+        <p id="chat-thread-header">Message about your order</p>
       </div>
       <button type="button" id="btn-close-chat" class="chat-close" aria-label="Close chat">&times;</button>
     </div>
     <div class="chat-panel-body">
       <div class="chat-sidebar">
-        <button type="button" id="btn-new-chat" class="btn btn-outline btn-sm chat-new-btn">+ New Chat</button>
+        <p class="chat-sidebar-label">Your order chats</p>
         <div id="chat-conv-list" class="chat-conv-list"></div>
       </div>
       <div class="chat-main">
-        <div id="chat-messages" class="chat-messages" data-empty-html="<div class=&quot;chat-empty-thread&quot;><img src=&quot;images/jhul-waving.png&quot; alt=&quot;&quot; class=&quot;sticker&quot; style=&quot;width:70px;&quot; /><p>Say hi to Jhul! Ask about your order, payment, or rerolls.</p></div>"></div>
-        <form id="chat-form" class="chat-form">
-          <input type="text" id="chat-input" placeholder="Type your message…" maxlength="2000" autocomplete="off" required />
-          <button type="submit" class="btn btn-primary">Send</button>
-        </form>
+        <div id="chat-conv-chips" class="chat-conv-chips hidden" aria-label="Switch chat"></div>
+        <div id="chat-messages" class="chat-messages" data-empty-html="<div class=&quot;chat-empty-thread&quot;><img src=&quot;images/jhul-waving.png&quot; alt=&quot;&quot; class=&quot;sticker&quot; style=&quot;width:70px;&quot; /><p>Say hi to Jhul! Ask about payment, delivery, or rerolls.</p></div>"></div>
+        <div class="chat-composer">
+          <p id="chat-composer-hint" class="chat-composer-hint">Type your message below</p>
+          <form id="chat-form" class="chat-form">
+            <label class="visually-hidden" for="chat-input">Message to Jhul</label>
+            <textarea id="chat-input" rows="2" placeholder="Type your message to Jhul…" maxlength="2000" autocomplete="off" required></textarea>
+            <button type="submit" class="btn btn-primary btn-send" aria-label="Send message">
+              <span class="btn-send-icon" aria-hidden="true">➤</span>
+              <span class="btn-send-label">Send</span>
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   </aside>
