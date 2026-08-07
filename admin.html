@@ -143,6 +143,10 @@
               Customer Chats
               <span id="admin-chat-live" class="chat-live-badge hidden" aria-hidden="true">● Live</span>
             </h3>
+            <div id="admin-start-chat-panel" class="admin-start-chat-panel hidden">
+              <p class="admin-start-chat-label">Start a chat (customer hasn&apos;t messaged yet)</p>
+              <div id="admin-start-chat-list" class="admin-start-chat-list"></div>
+            </div>
             <div id="admin-conv-list" class="admin-conv-list">
               <p class="chat-loading">Loading conversations…</p>
             </div>
@@ -153,7 +157,7 @@
             </div>
             <div id="admin-chat-messages" class="admin-chat-messages" data-empty-html="<p class=&quot;chat-empty&quot;>No messages yet.</p>"></div>
             <form id="admin-chat-form" class="admin-chat-form hidden">
-              <input type="text" id="admin-chat-input" placeholder="Reply to customer…" maxlength="2000" autocomplete="off" required />
+              <input type="text" id="admin-chat-input" placeholder="Write a message…" maxlength="2000" autocomplete="off" required />
               <button type="submit" class="btn btn-green">Send</button>
             </form>
           </div>

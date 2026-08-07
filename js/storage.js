@@ -378,6 +378,16 @@ async function createConversation(subject, orderId = null) {
   return data;
 }
 
+async function createAdminConversation(orderId) {
+  const res = await adminFetch("/api/chat?resource=conversations", {
+    method: "POST",
+    body: JSON.stringify({ orderId }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Failed to start chat");
+  return data;
+}
+
 async function getMessages(conversationId, asAdmin = false, since = null) {
   let url = `/api/chat?resource=messages&conversationId=${encodeURIComponent(conversationId)}`;
   if (since) url += `&since=${encodeURIComponent(since)}`;

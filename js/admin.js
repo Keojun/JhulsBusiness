@@ -117,20 +117,37 @@ function switchAdminView(view) {
   document.getElementById("admin-view-orders").classList.toggle("hidden", view !== "orders");
   document.getElementById("admin-view-messages").classList.toggle("hidden", view !== "messages");
 
-  if (view === "orders") {
-    renderOrders();
+  if (view === "messages") {
+    loadAdminMessagesView();
   } else {
-    loadAdminConversations();
+    renderOrders();
   }
 }
 
-window.openAdminChatForOrder = function (orderId) {
+async function loadAdminMessagesView() {
+  if (!allOrders.length) {
+    try {
+      allOrders = (await getOrders()).sort(
+        (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+      );
+    } catch (_) {}
+  }
+  await loadAdminConversations();
+  renderAdminStartChatList();
+}
+
+window.openAdminChatForOrder = async function (orderId) {
   switchAdminView("messages");
-  const conv = adminConversations.find((c) => c.orderId === orderId);
-  if (conv) {
+  try {
+    let conv = adminConversations.find((c) => c.orderId === orderId);
+    if (!conv) {
+      conv = await createAdminConversation(orderId);
+      await loadAdminConversations(true);
+    }
     selectAdminConversation(conv.id);
-  } else {
-    showToast("No chat yet for this order — customer may message you first.", "error");
+    showToast("Chat ready — send the first message", "success");
+  } catch (err) {
+    showToast(err.message, "error");
   }
 };
 
@@ -312,8 +329,8 @@ function renderOrderCard(o) {
             : ""
         }
         ${
-          o.customerId
-            ? `<button type="button" class="btn btn-outline btn-sm btn-order-chat" data-order-id="${escapeHtml(o.id)}">💬 Chat</button>`
+          o.customerId && status !== "voided"
+            ? `<button type="button" class="btn btn-outline btn-sm btn-order-chat" data-order-id="${escapeHtml(o.id)}">💬 Message Customer</button>`
             : ""
         }
       </div>
@@ -436,6 +453,7 @@ async function loadAdminConversations(silent = false) {
     lastAdminTotalUnread = totalUnreadCount(adminConversations);
     updateChatBadge(document.getElementById("admin-messages-badge"), lastAdminTotalUnread);
     renderAdminConvList();
+    renderAdminStartChatList();
     if (adminActiveConvId) {
       await loadAdminMessages(adminActiveConvId, { forceFull: !silent });
     }
@@ -451,7 +469,7 @@ function renderAdminConvList() {
   if (!listEl) return;
 
   if (!adminConversations.length) {
-    listEl.innerHTML = '<p class="chat-empty">No customer messages yet.</p>';
+    listEl.innerHTML = '<p class="chat-empty">No active chats yet. Start one from an order below or the Orders tab.</p>';
     return;
   }
 
@@ -469,6 +487,38 @@ function renderAdminConvList() {
 
   listEl.querySelectorAll(".admin-conv-item").forEach((btn) => {
     btn.addEventListener("click", () => selectAdminConversation(btn.dataset.convId));
+  });
+}
+
+function renderAdminStartChatList() {
+  const panel = document.getElementById("admin-start-chat-panel");
+  const listEl = document.getElementById("admin-start-chat-list");
+  if (!panel || !listEl) return;
+
+  const eligible = allOrders.filter(
+    (o) => o.customerId && o.status !== "voided" && !adminConversations.some((c) => c.orderId === o.id)
+  );
+
+  if (!eligible.length) {
+    panel.classList.add("hidden");
+    listEl.innerHTML = "";
+    return;
+  }
+
+  panel.classList.remove("hidden");
+  listEl.innerHTML = eligible
+    .slice(0, 12)
+    .map(
+      (o) => `
+    <button type="button" class="admin-start-chat-item" data-order-id="${escapeHtml(o.id)}">
+      <span class="admin-start-chat-user">${escapeHtml(o.username)}</span>
+      <span class="admin-start-chat-order">${escapeHtml(o.id)} · ${escapeHtml(String(o.rerollAmount))} rerolls</span>
+    </button>`
+    )
+    .join("");
+
+  listEl.querySelectorAll(".admin-start-chat-item").forEach((btn) => {
+    btn.addEventListener("click", () => openAdminChatForOrder(btn.dataset.orderId));
   });
 }
 
@@ -548,6 +598,7 @@ async function refreshAdminNotifications() {
     if (adminActiveConvId) {
       await loadAdminMessages(adminActiveConvId, { silent: true });
     }
+    renderAdminStartChatList();
   } catch (_) {}
 }
 
