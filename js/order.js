@@ -277,6 +277,11 @@ function drawInvoice(order) {
   ctx.font = "11px Segoe UI, sans-serif";
   ctx.fillText("facebook.com/jhulcammayo", W / 2, H - 16);
 
+  const previewImg = document.getElementById("invoice-preview-img");
+  if (previewImg) {
+    previewImg.src = canvas.toDataURL("image/png");
+  }
+
   return canvas;
 }
 
@@ -294,14 +299,96 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function downloadInvoice(order) {
-  const canvas = drawInvoice(order);
-  if (!canvas) return;
+function isMobileDevice() {
+  return (
+    /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints > 1 && window.innerWidth < 900)
+  );
+}
 
+function updateDownloadInvoiceButton() {
+  const btn = document.getElementById("download-invoice");
+  if (!btn) return;
+  btn.textContent = isMobileDevice() ? "📤 Save or Share Invoice" : "⬇ Download Invoice";
+}
+
+function setInvoiceDownloadStatus(message, type = "info") {
+  const el = document.getElementById("invoice-download-status");
+  if (!el) return;
+  if (!message) {
+    el.classList.add("hidden");
+    el.textContent = "";
+    return;
+  }
+  el.className = `invoice-download-status invoice-download-status-${type}`;
+  el.textContent = message;
+  el.classList.remove("hidden");
+}
+
+function canvasToBlob(canvas) {
+  return new Promise((resolve) => {
+    if (!canvas || !canvas.toBlob) {
+      resolve(null);
+      return;
+    }
+    canvas.toBlob((blob) => resolve(blob), "image/png", 1);
+  });
+}
+
+async function downloadInvoice(order) {
+  const canvas = drawInvoice(order);
+  if (!canvas) return { ok: false, method: "none" };
+
+  const filename = `rbxdisc-order-${order.id}.png`;
+  const blob = await canvasToBlob(canvas);
+
+  if (blob && navigator.share) {
+    const file = new File([blob], filename, { type: "image/png" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: "RBXDISC Order Invoice",
+          text: `Order ${order.id} — send this to Jhul on Messenger`,
+        });
+        return { ok: true, method: "share" };
+      } catch (err) {
+        if (err && err.name === "AbortError") {
+          return { ok: false, method: "cancelled" };
+        }
+      }
+    }
+  }
+
+  if (blob) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.rel = "noopener";
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+    if (isMobileDevice()) {
+      return { ok: true, method: "mobile-fallback" };
+    }
+    return { ok: true, method: "download" };
+  }
+
+  const dataUrl = canvas.toDataURL("image/png");
   const link = document.createElement("a");
-  link.download = `rbxdisc-order-${order.id}.png`;
-  link.href = canvas.toDataURL("image/png");
+  link.href = dataUrl;
+  link.download = filename;
+  link.target = "_blank";
+  link.rel = "noopener";
+  document.body.appendChild(link);
   link.click();
+  document.body.removeChild(link);
+
+  return { ok: true, method: isMobileDevice() ? "mobile-fallback" : "download" };
 }
 
 function initOrderForm() {
@@ -335,6 +422,7 @@ function initOrderForm() {
     }
 
     closeModal("modal-payment");
+    setInvoiceDownloadStatus("");
     openModal("modal-invoice");
     pendingOrder = null;
 
@@ -382,14 +470,39 @@ function initOrderForm() {
   }
 
   if (downloadBtn) {
-    downloadBtn.addEventListener("click", () => {
+    downloadBtn.addEventListener("click", async () => {
       if (!currentOrder) return;
 
-      downloadInvoice(currentOrder);
-      closeModal("modal-invoice");
-      openModal("modal-instructions");
+      setInvoiceDownloadStatus("Preparing invoice…", "info");
+      downloadBtn.disabled = true;
+
+      try {
+        const result = await downloadInvoice(currentOrder);
+
+        if (result.method === "cancelled") {
+          setInvoiceDownloadStatus("Share cancelled — long-press the image above to save it.", "warn");
+          return;
+        }
+
+        if (result.method === "mobile-fallback") {
+          setInvoiceDownloadStatus(
+            "If nothing saved, long-press the invoice image above → Save to Photos or Download image.",
+            "warn"
+          );
+          return;
+        }
+
+        setInvoiceDownloadStatus("");
+        closeModal("modal-invoice");
+        openModal("modal-instructions");
+      } finally {
+        downloadBtn.disabled = false;
+      }
     });
   }
+
+  updateDownloadInvoiceButton();
+  window.addEventListener("resize", updateDownloadInvoiceButton);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
