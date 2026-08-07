@@ -40,8 +40,9 @@ function initChat() {
 function openChatPanel(orderContext = null) {
   getCurrentCustomer().then(async (c) => {
     if (!c) {
-      if (typeof openAuthModal === "function") openAuthModal("login");
+      window.location.replace("/login?redirect=" + encodeURIComponent("/gakuran"));
       return;
+    }
     }
 
     document.getElementById("chat-panel")?.classList.remove("hidden");

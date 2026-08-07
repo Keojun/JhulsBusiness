@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — RBXDISC</title>
+  <link rel="icon" href="images/jhul-logo.png" type="image/png" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="page-login" data-public-page="true">
+
+  <div class="login-page-wrap">
+    <div class="card login-page-card">
+      <img src="images/jhul-happy.png" alt="" class="sticker login-page-sticker" aria-hidden="true" />
+      <div class="login-page-header">
+        <img src="images/jhul-logo.png" alt="RBXDISC" class="admin-login-logo" />
+        <h1>RBXDISC</h1>
+        <p>Sign in or create an account to access the shop</p>
+      </div>
+
+      <div class="login-page-tabs">
+        <button type="button" class="login-page-tab active" data-tab="login">Login</button>
+        <button type="button" class="login-page-tab" data-tab="signup">Sign Up</button>
+      </div>
+
+      <div id="login-error" class="auth-error hidden"></div>
+      <div id="signup-error" class="auth-error hidden"></div>
+
+      <form id="login-form" class="login-panel">
+        <div class="form-group">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" required autocomplete="email" placeholder="you@email.com" />
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" required autocomplete="current-password" placeholder="Your password" />
+        </div>
+        <button type="submit" class="btn btn-primary login-page-btn">Login</button>
+      </form>
+
+      <form id="signup-form" class="login-panel hidden">
+        <div class="form-group">
+          <label for="signup-email">Email</label>
+          <input type="email" id="signup-email" required autocomplete="email" placeholder="you@email.com" />
+        </div>
+        <div class="form-group">
+          <label for="signup-roblox">Roblox Username</label>
+          <input type="text" id="signup-roblox" required autocomplete="username" placeholder="Your Roblox username" maxlength="32" />
+        </div>
+        <div class="form-group">
+          <label for="signup-password">Password <span class="label-hint">(min. 8 characters)</span></label>
+          <input type="password" id="signup-password" required minlength="8" autocomplete="new-password" placeholder="Choose a password" />
+        </div>
+        <button type="submit" class="btn btn-green login-page-btn">Create Account</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>
