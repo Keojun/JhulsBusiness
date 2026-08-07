@@ -9,6 +9,8 @@ function initMobileNav() {
   const drawerClose = document.getElementById("nav-drawer-close");
   if (!toggle || !nav) return;
 
+  let scrollY = 0;
+
   function setOpen(open) {
     nav.classList.toggle("is-open", open);
     toggle.classList.toggle("is-active", open);
@@ -16,6 +18,14 @@ function initMobileNav() {
     toggle.setAttribute("aria-expanded", open ? "true" : "false");
     toggle.setAttribute("aria-label", open ? "Close menu" : "Open menu");
     document.body.classList.toggle("nav-open", open);
+
+    if (open) {
+      scrollY = window.scrollY;
+      document.body.style.top = `-${scrollY}px`;
+    } else {
+      document.body.style.top = "";
+      window.scrollTo(0, scrollY);
+    }
   }
 
   toggle.addEventListener("click", () => setOpen(!nav.classList.contains("is-open")));

@@ -692,6 +692,11 @@ body {
 
 body.nav-open {
   overflow: hidden;
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+  position: fixed;
+  inset: 0;
 }
 
 .social-icon {
@@ -1987,7 +1992,8 @@ body.nav-open {
     position: fixed;
     top: 0;
     right: 0;
-    width: min(300px, 86vw);
+    width: min(280px, 84vw);
+    max-width: 100vw;
     height: 100vh;
     height: 100dvh;
     flex: none;
@@ -1995,11 +2001,14 @@ body.nav-open {
     align-items: stretch;
     justify-content: flex-start;
     gap: 0;
-    padding: calc(1rem + env(safe-area-inset-top, 0)) 1rem calc(1.25rem + env(safe-area-inset-bottom, 0));
+    padding: calc(0.85rem + env(safe-area-inset-top, 0)) 0.85rem calc(1rem + env(safe-area-inset-bottom, 0));
     background: linear-gradient(180deg, #fff8f2 0%, #ffffff 45%, #f0faf3 100%);
     box-shadow: -10px 0 40px rgba(0, 0, 0, 0.16);
     z-index: 200;
+    overflow-x: hidden;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    box-sizing: border-box;
     -webkit-overflow-scrolling: touch;
   }
 
@@ -2015,23 +2024,36 @@ body.nav-open {
 
   .nav-drawer-header {
     display: flex;
-    padding-bottom: 0.5rem;
-    margin-bottom: 0.5rem;
+    padding-bottom: 0.45rem;
+    margin-bottom: 0.45rem;
     border-bottom: 1px solid var(--green-pastel);
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    flex-shrink: 0;
+  }
+
+  .nav-action-chat .chat-notify-badge {
+    position: static;
+    margin-left: 0.35rem;
   }
 
   .nav-group {
     flex-direction: column;
     align-items: stretch;
     width: 100%;
-    gap: 0.45rem;
-    padding: 0.75rem 0;
+    max-width: 100%;
+    min-width: 0;
+    gap: 0.4rem;
+    padding: 0.55rem 0;
     margin: 0;
     border-left: none;
+    overflow: hidden;
   }
 
   .nav-group-pages {
     border-bottom: 1px solid var(--green-pastel);
+    padding-top: 0.35rem;
   }
 
   .nav-group-actions {
@@ -2039,17 +2061,36 @@ body.nav-open {
   }
 
   .nav-group-social {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.65rem 0 0.15rem;
+    margin-top: 0;
+    border-bottom: none;
+  }
+
+  .nav-social-label {
+    margin: 0;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--dark-soft);
+  }
+
+  .nav-social-row {
+    display: flex;
     flex-direction: row;
+    align-items: center;
     justify-content: center;
     gap: 0.85rem;
-    padding-top: 0.65rem;
-    padding-bottom: 0.25rem;
-    margin-top: 0;
+    width: auto;
+    max-width: 100%;
   }
 
   .nav-group-admin {
-    gap: 0.55rem;
-    padding: 0.5rem 0 0.75rem;
+    gap: 0.45rem;
+    padding: 0.35rem 0 0.55rem;
   }
 
   .nav-links a:not(.social-icon) {
@@ -2057,11 +2098,15 @@ body.nav-open {
     align-items: center;
     justify-content: center;
     width: 100%;
-    padding: 0.8rem 1rem;
-    font-size: 0.95rem;
+    max-width: 100%;
+    padding: 0.62rem 0.85rem;
+    font-size: 0.92rem;
     background: rgba(255, 255, 255, 0.65);
-    min-height: 46px;
+    min-height: 42px;
     box-sizing: border-box;
+    border-radius: 10px;
+    white-space: normal;
+    word-break: break-word;
   }
 
   .nav-links a:not(.social-icon).active {
@@ -2074,21 +2119,35 @@ body.nav-open {
     color: var(--dark);
   }
 
-  .nav-group-social .social-icon {
+  .nav-links .social-icon,
+  .nav-social-row .social-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 44px;
     height: 44px;
+    min-width: 44px;
     min-height: 44px;
-    flex: 0 0 auto;
+    max-width: 44px;
+    flex: 0 0 44px;
+    padding: 0;
+    margin: 0;
+    border-radius: 50%;
+    box-sizing: border-box;
   }
 
   .nav-action-link {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     justify-content: center;
-    padding: 0.8rem 1rem;
-    min-height: 46px;
-    border-radius: 12px;
+    padding: 0.62rem 0.85rem;
+    min-height: 42px;
+    border-radius: 10px;
     background: rgba(255, 255, 255, 0.65);
     box-sizing: border-box;
+    white-space: normal;
+    word-break: break-word;
   }
 
   .nav-action-logout {
@@ -2128,12 +2187,15 @@ body.nav-open {
 
   .auth-user-pill {
     display: block;
-    max-width: none;
+    max-width: 100%;
     width: 100%;
     text-align: center;
-    padding: 0.75rem 1rem;
+    padding: 0.62rem 0.85rem;
     box-sizing: border-box;
-    margin-bottom: 0.15rem;
+    margin-bottom: 0.1rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .hero {
