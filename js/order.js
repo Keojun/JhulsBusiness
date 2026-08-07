@@ -327,6 +327,10 @@ function initOrderForm() {
     closeModal("modal-payment");
     openModal("modal-invoice");
     pendingOrder = null;
+
+    if (typeof setPendingOrderForChat === "function") {
+      setPendingOrderForChat(currentOrder);
+    }
   });
 
   async function submitOrder(e) {

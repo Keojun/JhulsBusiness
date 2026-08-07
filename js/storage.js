@@ -8,6 +8,9 @@ const STORAGE_KEYS = {
   reviewCodes: "jhul_review_codes",
 };
 
+const CUSTOMER_TOKEN_KEY = "rbxdisc_customer_token";
+let customerCache = null;
+
 const PH_TIMEZONE = "Asia/Manila";
 
 function formatPhilippinesDateTime(value) {
@@ -46,6 +49,23 @@ function setAdminPassword(pw) {
 
 function adminHeaders() {
   return { "Content-Type": "application/json", "X-Admin-Password": adminPassword };
+}
+
+function getCustomerToken() {
+  return localStorage.getItem(CUSTOMER_TOKEN_KEY) || "";
+}
+
+function setCustomerToken(token) {
+  if (token) localStorage.setItem(CUSTOMER_TOKEN_KEY, token);
+  else localStorage.removeItem(CUSTOMER_TOKEN_KEY);
+  customerCache = null;
+}
+
+function customerHeaders(extra = {}) {
+  const headers = { "Content-Type": "application/json", ...extra };
+  const token = getCustomerToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
 }
 
 /* ── localStorage fallbacks ── */
@@ -103,7 +123,7 @@ async function addOrder(order) {
   try {
     const res = await fetch("/api/orders", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: customerHeaders(),
       body: JSON.stringify(order),
     });
     const data = await res.json();
@@ -130,7 +150,7 @@ async function getOrders() {
 
 async function verifyAdminPassword(password) {
   try {
-    const res = await fetch("/api/admin/login", {
+    const res = await fetch("/api/auth?action=admin-login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password }),
@@ -144,10 +164,10 @@ async function verifyAdminPassword(password) {
 
 async function completeOrderApi(orderId) {
   try {
-    const res = await fetch("/api/orders/complete", {
+    const res = await fetch("/api/orders", {
       method: "POST",
       headers: adminHeaders(),
-      body: JSON.stringify({ orderId }),
+      body: JSON.stringify({ action: "complete", orderId }),
     });
     const data = await res.json();
     if (res.ok) return data.code;
@@ -173,10 +193,10 @@ async function completeOrderApi(orderId) {
 
 async function validateReviewCode(code) {
   try {
-    const res = await fetch("/api/review-codes/validate", {
+    const res = await fetch("/api/reviews?action=validate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ action: "validate", code }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -236,6 +256,105 @@ async function getFacebookReviews() {
   } catch (_) {}
 
   return [];
+}
+
+async function customerSignup({ email, password, robloxUsername, displayName }) {
+  const res = await fetch("/api/auth?action=signup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, robloxUsername, displayName }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Signup failed");
+  setCustomerToken(data.token);
+  customerCache = data.customer;
+  return data.customer;
+}
+
+async function customerLogin({ email, password }) {
+  const res = await fetch("/api/auth?action=login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Login failed");
+  setCustomerToken(data.token);
+  customerCache = data.customer;
+  return data.customer;
+}
+
+async function customerLogout() {
+  try {
+    await fetch("/api/auth?action=logout", {
+      method: "POST",
+      headers: customerHeaders(),
+    });
+  } catch (_) {}
+  setCustomerToken("");
+}
+
+async function getCurrentCustomer(forceRefresh = false) {
+  if (!getCustomerToken()) return null;
+  if (customerCache && !forceRefresh) return customerCache;
+
+  try {
+    const res = await fetch("/api/auth?action=me", { headers: customerHeaders() });
+    if (!res.ok) {
+      setCustomerToken("");
+      return null;
+    }
+    const data = await res.json();
+    customerCache = data.customer;
+    return data.customer;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function getConversations(asAdmin = false) {
+  const headers = asAdmin ? adminHeaders() : customerHeaders();
+  const res = await fetch("/api/chat?resource=conversations", { headers });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Failed to load conversations");
+  return data;
+}
+
+async function createConversation(subject, orderId = null) {
+  const res = await fetch("/api/chat?resource=conversations", {
+    method: "POST",
+    headers: customerHeaders(),
+    body: JSON.stringify({ subject, orderId }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Failed to create conversation");
+  return data;
+}
+
+async function getMessages(conversationId, asAdmin = false) {
+  const headers = asAdmin ? adminHeaders() : customerHeaders();
+  const res = await fetch(
+    `/api/chat?resource=messages&conversationId=${encodeURIComponent(conversationId)}`,
+    { headers }
+  );
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Failed to load messages");
+  return data;
+}
+
+async function sendChatMessage(conversationId, body, asAdmin = false) {
+  const headers = asAdmin ? adminHeaders() : customerHeaders();
+  const res = await fetch(
+    `/api/chat?resource=messages&conversationId=${encodeURIComponent(conversationId)}`,
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ body }),
+    }
+  );
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Failed to send message");
+  return data;
 }
 
 async function checkDatabaseHealth() {

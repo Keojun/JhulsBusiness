@@ -1,4 +1,10 @@
 {
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "crons": [
+    {
+      "path": "/api/health?cleanup=1",
+      "schedule": "0 16 * * *"
+    }
+  ]
 }
