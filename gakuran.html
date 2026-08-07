@@ -241,7 +241,12 @@
 
       <div class="modal-invoice-wrap">
         <span class="invoice-label">Your Order Invoice</span>
-        <canvas id="invoice-canvas"></canvas>
+        <canvas id="invoice-canvas" class="invoice-canvas-source" aria-hidden="true"></canvas>
+        <img id="invoice-preview-img" class="invoice-preview-img" alt="Your RBXDISC order invoice" />
+        <p class="invoice-mobile-hint" id="invoice-mobile-hint">
+          <strong>On phone:</strong> tap <strong>Save or Share Invoice</strong> below, or <strong>long-press the image</strong> → Save to Photos / Download image.
+        </p>
+        <p class="invoice-download-status hidden" id="invoice-download-status" role="status"></p>
       </div>
 
       <button type="button" id="download-invoice" class="btn btn-primary download-btn">

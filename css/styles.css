@@ -1176,6 +1176,8 @@ body.nav-open {
   padding: 1rem;
   font-size: 1.1rem;
   font-weight: 700;
+  min-height: 52px;
+  touch-action: manipulation;
 }
 
 .instructions-panel {
@@ -2318,6 +2320,67 @@ body.nav-open {
   box-shadow: 0 0 0 3px var(--green-pastel);
 }
 
+.invoice-canvas-source {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.invoice-preview-img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 0 auto;
+  -webkit-touch-callout: default;
+  user-select: auto;
+  touch-action: manipulation;
+}
+
+.invoice-mobile-hint {
+  margin: 0.85rem 0 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--green-pastel);
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--dark-soft);
+  text-align: left;
+}
+
+.invoice-download-status {
+  margin: 0.65rem 0 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.invoice-download-status-info {
+  background: #e8f4fd;
+  color: #1a5276;
+  border: 1px solid #aed6f1;
+}
+
+.invoice-download-status-warn {
+  background: #fff3e0;
+  color: #7c4a1e;
+  border: 1px solid #ffc9a3;
+}
+
+@media (min-width: 769px) {
+  .invoice-mobile-hint {
+    display: none;
+  }
+}
+
 .modal-invoice-wrap canvas {
   max-width: 100%;
   border-radius: 8px;
@@ -2777,6 +2840,26 @@ body.nav-open {
 .chat-bubble p {
   margin-bottom: 0.25rem;
   word-break: break-word;
+}
+
+.chat-link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.chat-link:hover {
+  opacity: 0.88;
+}
+
+.chat-bubble-customer .chat-link {
+  color: #fff;
+}
+
+.chat-bubble-admin .chat-link {
+  color: var(--green-deep);
 }
 
 .chat-bubble time {
@@ -3452,6 +3535,14 @@ body.chat-open .chat-fab-wrap {
 
 .admin-chat-messages .chat-bubble-admin time {
   color: rgba(255, 255, 255, 0.85);
+}
+
+.admin-chat-messages .chat-bubble-admin .chat-link {
+  color: #fff;
+}
+
+.admin-chat-messages .chat-bubble-customer .chat-link {
+  color: var(--orange-deep);
 }
 
 .admin-chat-messages .chat-bubble-customer {

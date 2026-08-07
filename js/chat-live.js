@@ -34,6 +34,38 @@ function escapeChatAttr(str) {
   return String(str).replace(/"/g, "&quot;");
 }
 
+function trimUrlTrailingPunctuation(url) {
+  let trimmed = url;
+  let suffix = "";
+  while (/[.,!?;:)\]\u2019'\u201d]$/.test(trimmed)) {
+    suffix = trimmed.slice(-1) + suffix;
+    trimmed = trimmed.slice(0, -1);
+  }
+  return { url: trimmed, suffix };
+}
+
+function linkifyChatText(text) {
+  const escaped = escapeChatHtml(text);
+  const pattern = /(\bhttps?:\/\/[^\s<>"']+|\bwww\.[^\s<>"']+)/gi;
+
+  return escaped.replace(pattern, (match) => {
+    const { url, suffix } = trimUrlTrailingPunctuation(match);
+    if (!url) return match;
+
+    let href = url;
+    if (/^www\./i.test(href)) href = `https://${href}`;
+
+    try {
+      const parsed = new URL(href);
+      if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return match;
+      const safeHref = escapeChatAttr(parsed.href);
+      return `<a href="${safeHref}" class="chat-link" target="_blank" rel="noopener noreferrer">${url}</a>${suffix}`;
+    } catch {
+      return match;
+    }
+  });
+}
+
 function messageBubbleHtml(m, options = {}) {
   const pending = options.pending || m.pending ? " chat-bubble-pending" : "";
   const isNew = options.isNew ? " chat-bubble-new" : "";
@@ -42,7 +74,7 @@ function messageBubbleHtml(m, options = {}) {
 
   return `
     <div class="chat-bubble chat-bubble-${m.senderType}${pending}${isNew}"${idAttr}>
-      <p>${escapeChatHtml(m.body)}</p>
+      <p>${linkifyChatText(m.body)}</p>
       <time>${escapeChatHtml(timeLabel)}</time>
     </div>`;
 }
