@@ -237,6 +237,53 @@ module.exports = async function handler(req, res) {
     }
 
     if (req.method === "POST") {
+      if (isAdmin) {
+        const orderId = body.orderId || body.order_id || null;
+        if (!orderId) {
+          return sendJson(res, 400, { error: "orderId is required to start a chat" });
+        }
+
+        const orderRows = await dbRequest("GET", "orders", {
+          query: `id=eq.${encodeURIComponent(orderId)}&select=id,customer_id,status&limit=1`,
+        });
+        const order = Array.isArray(orderRows) ? orderRows[0] : null;
+        if (!order) {
+          return sendJson(res, 404, { error: "Order not found" });
+        }
+        if (!order.customer_id) {
+          return sendJson(res, 400, {
+            error: "This order has no customer account — they must place the order while logged in.",
+          });
+        }
+        if (order.status === "voided") {
+          return sendJson(res, 400, { error: "Cannot start chat on a voided order" });
+        }
+
+        const existingRows = await dbRequest("GET", "conversations", {
+          query: `order_id=eq.${encodeURIComponent(orderId)}&select=*&limit=1`,
+        });
+        const existing = Array.isArray(existingRows) ? existingRows[0] : null;
+        if (existing) {
+          const [enriched] = await enrichConversations([existing], "admin");
+          return sendJson(res, 200, enriched);
+        }
+
+        const rows = await dbRequest("POST", "conversations", {
+          body: {
+            customer_id: order.customer_id,
+            order_id: orderId,
+            subject: `Order ${orderId}`,
+            status: "open",
+            updated_at: new Date().toISOString(),
+          },
+          prefer: "return=representation",
+        });
+
+        const conv = Array.isArray(rows) ? rows[0] : rows;
+        const [enriched] = await enrichConversations([conv], "admin");
+        return sendJson(res, 201, enriched);
+      }
+
       if (!customer) return sendJson(res, 401, { error: "Login required to start a chat" });
 
       const orderId = body.orderId || body.order_id || null;
