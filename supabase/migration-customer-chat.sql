@@ -50,3 +50,9 @@ alter table customers enable row level security;
 alter table customer_sessions enable row level security;
 alter table conversations enable row level security;
 alter table messages enable row level security;
+
+-- Optional: Supabase pg_cron (Pro plan) — same cleanup without Vercel Cron:
+-- select cron.schedule('cleanup-old-chats', '0 16 * * *', $$
+--   delete from conversations where updated_at < now() - interval '30 days';
+--   delete from customer_sessions where expires_at < now();
+-- $$);
