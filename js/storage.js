@@ -41,15 +41,24 @@ function formatPhilippinesTime(value) {
   });
 }
 
-let adminPassword = sessionStorage.getItem("jhul_admin_pw") || "";
+let adminPassword = "";
 
 function setAdminPassword(pw) {
-  adminPassword = pw;
-  sessionStorage.setItem("jhul_admin_pw", pw);
+  adminPassword = pw || "";
 }
 
-function adminHeaders() {
-  return { "Content-Type": "application/json", "X-Admin-Password": adminPassword };
+function adminHeaders(extra = {}) {
+  const headers = { "Content-Type": "application/json", ...extra };
+  if (adminPassword) headers["X-Admin-Password"] = adminPassword;
+  return headers;
+}
+
+function adminFetch(url, options = {}) {
+  return fetch(url, {
+    ...FETCH_CREDENTIALS,
+    ...options,
+    headers: adminHeaders(options.headers),
+  });
 }
 
 function customerHeaders(extra = {}) {
@@ -131,9 +140,9 @@ async function addOrder(order) {
 
 async function getOrders() {
   try {
-    const res = await fetch("/api/orders", { headers: adminHeaders() });
+    const res = await adminFetch("/api/orders");
     if (res.ok) return await res.json();
-    if (res.status === 401) throw new Error("Unauthorized — wrong admin password");
+    if (res.status === 401) throw new Error("Unauthorized — admin session expired");
   } catch (err) {
     if (err.message.includes("Unauthorized")) throw err;
   }
@@ -152,6 +161,7 @@ async function verifyAdminPassword(password) {
   try {
     const res = await fetch("/api/auth?action=admin-login", {
       method: "POST",
+      ...FETCH_CREDENTIALS,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password }),
     });
@@ -162,11 +172,31 @@ async function verifyAdminPassword(password) {
   }
 }
 
+async function checkAdminSession() {
+  try {
+    const res = await fetch("/api/auth?action=admin-me", FETCH_CREDENTIALS);
+    if (!res.ok) return false;
+    const data = await res.json();
+    return Boolean(data.ok);
+  } catch {
+    return false;
+  }
+}
+
+async function adminLogout() {
+  try {
+    await fetch("/api/auth?action=admin-logout", {
+      method: "POST",
+      ...FETCH_CREDENTIALS,
+    });
+  } catch (_) {}
+  setAdminPassword("");
+}
+
 async function completeOrderApi(orderId) {
   try {
-    const res = await fetch("/api/orders", {
+    const res = await adminFetch("/api/orders", {
       method: "POST",
-      headers: adminHeaders(),
       body: JSON.stringify({ action: "complete", orderId }),
     });
     const data = await res.json();
@@ -316,10 +346,7 @@ async function getCurrentCustomer(forceRefresh = false) {
 
 async function getConversations(asAdmin = false) {
   if (asAdmin) {
-    const res = await fetch("/api/chat?resource=conversations", {
-      ...FETCH_CREDENTIALS,
-      headers: adminHeaders(),
-    });
+    const res = await adminFetch("/api/chat?resource=conversations");
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Failed to load conversations");
     return data;
@@ -345,9 +372,7 @@ async function getMessages(conversationId, asAdmin = false, since = null) {
   let url = `/api/chat?resource=messages&conversationId=${encodeURIComponent(conversationId)}`;
   if (since) url += `&since=${encodeURIComponent(since)}`;
 
-  const res = asAdmin
-    ? await fetch(url, { ...FETCH_CREDENTIALS, headers: adminHeaders() })
-    : await customerFetch(url);
+  const res = asAdmin ? await adminFetch(url) : await customerFetch(url);
 
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Failed to load messages");
@@ -357,10 +382,8 @@ async function getMessages(conversationId, asAdmin = false, since = null) {
 async function sendChatMessage(conversationId, body, asAdmin = false) {
   const url = `/api/chat?resource=messages&conversationId=${encodeURIComponent(conversationId)}`;
   const res = asAdmin
-    ? await fetch(url, {
+    ? await adminFetch(url, {
         method: "POST",
-        ...FETCH_CREDENTIALS,
-        headers: adminHeaders(),
         body: JSON.stringify({ body }),
       })
     : await customerFetch(url, {
@@ -375,8 +398,23 @@ async function sendChatMessage(conversationId, body, asAdmin = false) {
 
 async function checkDatabaseHealth() {
   try {
-    const res = await fetch("/api/health");
-    if (res.ok) return await res.json();
+    const res = await fetch("/api/health?format=json");
+    const report = await res.json();
+    const db = report.checks?.database;
+
+    if (db?.connected) {
+      return {
+        database: "connected",
+        status: report.status,
+        message: db.message || null,
+      };
+    }
+
+    return {
+      database: db?.status || report.status || "unknown",
+      status: report.status,
+      message: db?.message || report.error || null,
+    };
   } catch (_) {}
   return { database: "unknown" };
 }

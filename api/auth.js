@@ -9,6 +9,11 @@ const {
 } = require("../lib/db");
 const { getRawSessionToken, setSessionCookie, clearSessionCookie } = require("../lib/session-cookie");
 const {
+  isAdminSessionValid,
+  setAdminSessionCookie,
+  clearAdminSessionCookie,
+} = require("../lib/admin-session");
+const {
   hashPassword,
   verifyPassword,
   createSession,
@@ -47,9 +52,24 @@ module.exports = async function handler(req, res) {
 
       const password = body.password || "";
       if (checkAdmin(req, { password })) {
+        setAdminSessionCookie(res);
         return sendJson(res, 200, { ok: true });
       }
       return authFailure(res, "Incorrect password");
+    }
+
+    if (action === "admin-me") {
+      if (req.method !== "GET") return sendJson(res, 405, { error: "Method not allowed" });
+      if (isAdminSessionValid(req)) {
+        return sendJson(res, 200, { ok: true });
+      }
+      return authFailure(res, "Not logged in");
+    }
+
+    if (action === "admin-logout") {
+      if (req.method !== "POST") return sendJson(res, 405, { error: "Method not allowed" });
+      clearAdminSessionCookie(res);
+      return sendJson(res, 200, { ok: true });
     }
 
     if (action === "logout") {
@@ -153,7 +173,7 @@ module.exports = async function handler(req, res) {
     }
 
     return sendJson(res, 400, {
-      error: "Unknown action. Use ?action=signup|login|logout|me|admin-login",
+      error: "Unknown action. Use ?action=signup|login|logout|me|admin-login|admin-me|admin-logout",
     });
   } catch (err) {
     return sendJson(res, 500, { error: err.message });
