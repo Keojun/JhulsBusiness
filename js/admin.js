@@ -32,9 +32,14 @@ function initAdmin() {
     if (health.database === "connected") {
       dbStatus.className = "admin-db-pill admin-db-ok";
       dbStatus.textContent = "✅ Database connected";
+    } else if (health.database === "not_configured") {
+      dbStatus.className = "admin-db-pill admin-db-warn";
+      dbStatus.textContent = "⚠️ Database not configured — add Supabase env vars in Vercel";
     } else {
       dbStatus.className = "admin-db-pill admin-db-warn";
-      dbStatus.textContent = `⚠️ Database: ${health.database} — check Vercel env vars`;
+      dbStatus.textContent = health.message
+        ? `⚠️ Database: ${health.message}`
+        : `⚠️ Database: ${health.database} — check Vercel env vars`;
     }
   });
 
@@ -44,8 +49,7 @@ function initAdmin() {
     const ok = await verifyAdminPassword(pw);
 
     if (ok) {
-      setAdminPassword(pw);
-      sessionStorage.setItem("jhul_admin", "1");
+      setAdminPassword("");
       showDashboard();
     } else {
       showToast("Incorrect password. Check ADMIN_PASSWORD in Vercel.", "error");
@@ -92,9 +96,9 @@ function initAdmin() {
     });
   });
 
-  if (sessionStorage.getItem("jhul_admin") === "1" && sessionStorage.getItem("jhul_admin_pw")) {
-    showDashboard();
-  }
+  checkAdminSession().then((loggedIn) => {
+    if (loggedIn) showDashboard();
+  });
 }
 
 function showDashboard() {
@@ -130,9 +134,8 @@ window.openAdminChatForOrder = function (orderId) {
   }
 };
 
-function logout() {
-  sessionStorage.removeItem("jhul_admin");
-  sessionStorage.removeItem("jhul_admin_pw");
+async function logout() {
+  await adminLogout();
   stopAdminNotifyPoll();
   setDocumentTitleBadge(0, "Admin — RBXDISC");
   document.getElementById("login-section").classList.remove("hidden");
