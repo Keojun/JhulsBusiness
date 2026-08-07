@@ -127,6 +127,12 @@ module.exports = async function handler(req, res) {
         return sendJson(res, 403, { error: "Access denied" });
       }
 
+      if (!isAdmin && customer && !conversation.order_id) {
+        return sendJson(res, 403, {
+          error: "This chat is no longer available. Message Jhul about a specific order instead.",
+        });
+      }
+
       if (req.method === "GET") {
         let query = `conversation_id=eq.${encodeURIComponent(conversationId)}&select=*&order=created_at.asc`;
         const since = url.searchParams.get("since");
@@ -220,7 +226,7 @@ module.exports = async function handler(req, res) {
       if (!customer) return sendJson(res, 401, { error: "Login required" });
 
       const data = await dbRequest("GET", "conversations", {
-        query: `customer_id=eq.${customer.id}&select=*&order=updated_at.desc`,
+        query: `customer_id=eq.${customer.id}&order_id=not.is.null&select=*&order=updated_at.desc`,
       });
       return sendJson(res, 200, await enrichConversations(Array.isArray(data) ? data : [], "customer"));
     }

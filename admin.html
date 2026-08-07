@@ -18,12 +18,26 @@
           <span class="logo-sub">Admin — Jhul Cammayo</span>
         </span>
       </a>
-      <nav class="nav-links">
-        <span class="admin-clock" id="admin-clock" title="Philippines Time (UTC+8)">🕐 Loading…</span>
-        <a href="index.html">← Back to Site</a>
-        <button type="button" id="btn-logout" class="btn btn-outline btn-sm hidden">Logout</button>
+      <nav class="nav-links" id="site-nav" aria-label="Admin navigation">
+        <div class="nav-drawer-header">
+          <span class="nav-drawer-title">Admin</span>
+          <button type="button" class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">&times;</button>
+        </div>
+        <div class="nav-group nav-group-admin">
+          <span class="admin-clock" id="admin-clock" title="Philippines Time (UTC+8)">🕐 Loading…</span>
+          <a href="index.html" class="nav-admin-back">← Back to Site</a>
+          <button type="button" id="btn-logout" class="nav-action-link nav-action-logout hidden">Logout</button>
+        </div>
       </nav>
+      <div class="header-actions">
+        <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+        </button>
+      </div>
     </div>
+    <div class="nav-backdrop hidden" id="nav-backdrop" aria-hidden="true"></div>
   </header>
 
   <div class="container admin-panel">
@@ -152,6 +166,7 @@
   <div id="admin-toast" class="admin-toast hidden" role="status"></div>
 
   <script src="js/storage.js"></script>
+  <script src="js/nav.js"></script>
   <script src="js/chat-live.js"></script>
   <script src="js/admin.js"></script>
 </body>
