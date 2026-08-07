@@ -9,8 +9,9 @@ let clockInterval = null;
 let adminActiveView = "orders";
 let adminConversations = [];
 let adminActiveConvId = null;
-let adminChatPoller = null;
+let adminNotifyPoller = null;
 let adminConvFingerprint = "";
+let lastAdminTotalUnread = null;
 const adminMessageCache = new Map();
 
 function initAdmin() {
@@ -100,6 +101,7 @@ function showDashboard() {
   document.getElementById("login-section").classList.add("hidden");
   document.getElementById("admin-dashboard").classList.remove("hidden");
   document.getElementById("btn-logout").classList.remove("hidden");
+  startAdminNotifyPoll();
   switchAdminView("orders");
 }
 
@@ -112,11 +114,9 @@ function switchAdminView(view) {
   document.getElementById("admin-view-messages").classList.toggle("hidden", view !== "messages");
 
   if (view === "orders") {
-    stopAdminChatPoll();
     renderOrders();
   } else {
     loadAdminConversations();
-    startAdminChatPoll();
   }
 }
 
@@ -133,7 +133,8 @@ window.openAdminChatForOrder = function (orderId) {
 function logout() {
   sessionStorage.removeItem("jhul_admin");
   sessionStorage.removeItem("jhul_admin_pw");
-  stopAdminChatPoll();
+  stopAdminNotifyPoll();
+  setDocumentTitleBadge(0, "Admin — RBXDISC");
   document.getElementById("login-section").classList.remove("hidden");
   document.getElementById("admin-dashboard").classList.add("hidden");
   document.getElementById("btn-logout").classList.add("hidden");
@@ -141,6 +142,7 @@ function logout() {
   allOrders = [];
   adminConversations = [];
   adminActiveConvId = null;
+  lastAdminTotalUnread = null;
 }
 
 function startManilaClock() {
@@ -393,6 +395,8 @@ async function loadAdminConversations(silent = false) {
   try {
     adminConversations = await getConversations(true);
     adminConvFingerprint = convListFingerprint(adminConversations);
+    lastAdminTotalUnread = totalUnreadCount(adminConversations);
+    updateChatBadge(document.getElementById("admin-messages-badge"), lastAdminTotalUnread);
     renderAdminConvList();
     if (adminActiveConvId) {
       await loadAdminMessages(adminActiveConvId, { forceFull: !silent });
@@ -416,8 +420,8 @@ function renderAdminConvList() {
   listEl.innerHTML = adminConversations
     .map(
       (c) => `
-    <button type="button" class="admin-conv-item ${c.id === adminActiveConvId ? "active" : ""}" data-conv-id="${c.id}">
-      <span class="admin-conv-name">${escapeHtml(c.customerName)}</span>
+    <button type="button" class="admin-conv-item ${c.id === adminActiveConvId ? "active" : ""} ${c.unreadCount ? "has-unread" : ""}" data-conv-id="${c.id}">
+      <span class="admin-conv-name">${escapeHtml(c.customerName)}${unreadBadgeHtml(c.unreadCount)}</span>
       <span class="admin-conv-meta">${escapeHtml(c.customerRoblox || c.customerEmail || "")}</span>
       <span class="admin-conv-subject">${escapeHtml(c.subject)}${c.orderId ? ` · ${escapeHtml(c.orderId)}` : ""}</span>
       <span class="admin-conv-time">${escapeHtml(c.updatedAtFormatted || "")}</span>
@@ -474,23 +478,44 @@ async function loadAdminMessages(convId, options = {}) {
   }
 }
 
-async function refreshAdminChatLive() {
-  if (adminActiveView !== "messages" || document.hidden) return;
-
+async function refreshAdminNotifications() {
   try {
     const convs = await getConversations(true);
-    const fingerprint = convListFingerprint(convs);
+    adminConversations = convs;
+    const total = totalUnreadCount(convs);
 
+    updateChatBadge(document.getElementById("admin-messages-badge"), total);
+    setDocumentTitleBadge(total, "Admin — RBXDISC");
+
+    if (lastAdminTotalUnread !== null && total > lastAdminTotalUnread) {
+      const newestUnread = convs.find((c) => c.unreadCount > 0);
+      if (newestUnread && shouldNotifyAdmin(newestUnread)) {
+        notifyNewMessage({
+          title: "New customer message",
+          body: `${newestUnread.customerName} sent a message`,
+          tag: `admin-${newestUnread.id}`,
+        });
+      }
+    }
+    lastAdminTotalUnread = total;
+
+    if (document.hidden || adminActiveView !== "messages") return;
+
+    const fingerprint = convListFingerprint(convs);
     if (fingerprint !== adminConvFingerprint) {
       adminConvFingerprint = fingerprint;
-      adminConversations = convs;
-      renderAdminConvList();
     }
+    renderAdminConvList();
 
     if (adminActiveConvId) {
       await loadAdminMessages(adminActiveConvId, { silent: true });
     }
   } catch (_) {}
+}
+
+function shouldNotifyAdmin(conv) {
+  if (adminActiveView !== "messages") return true;
+  return adminActiveConvId !== conv.id;
 }
 
 async function sendAdminReply() {
@@ -531,16 +556,16 @@ async function sendAdminReply() {
   }
 }
 
-function startAdminChatPoll() {
-  stopAdminChatPoll();
+function startAdminNotifyPoll() {
+  stopAdminNotifyPoll();
   setLiveBadge(document.getElementById("admin-chat-live"), true);
-  adminChatPoller = createChatPoller(refreshAdminChatLive, CHAT_POLL_ADMIN_MS);
-  adminChatPoller.start();
+  adminNotifyPoller = createChatPoller(refreshAdminNotifications, CHAT_POLL_ADMIN_MS);
+  adminNotifyPoller.start();
 }
 
-function stopAdminChatPoll() {
-  adminChatPoller?.stop();
-  adminChatPoller = null;
+function stopAdminNotifyPoll() {
+  adminNotifyPoller?.stop();
+  adminNotifyPoller = null;
   setLiveBadge(document.getElementById("admin-chat-live"), false);
 }
 

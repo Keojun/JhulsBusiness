@@ -4,9 +4,11 @@
 
 let activeConversationId = null;
 let customerChatPoller = null;
+let customerNotifyPoller = null;
 let pendingOrderForChat = null;
 const customerMessageCache = new Map();
 let customerConvFingerprint = "";
+let lastCustomerTotalUnread = null;
 
 function initChat() {
   const openBtn = document.getElementById("btn-open-chat");
@@ -32,10 +34,14 @@ function initChat() {
   document.addEventListener("rbxdisc:auth", (e) => {
     if (e.detail.customer) {
       showChatFab(false);
+      startCustomerNotifyPoll();
     } else {
       closeChatPanel();
       activeConversationId = null;
       hideChatFab();
+      stopCustomerNotifyPoll();
+      updateCustomerChatBadges(0);
+      setDocumentTitleBadge(0);
     }
   });
 
@@ -87,6 +93,7 @@ function openChatPanel(orderContext = null) {
     }
 
     startPolling();
+    stopCustomerNotifyPoll();
   });
 }
 
@@ -100,7 +107,10 @@ function closeChatPanel() {
   stopPolling();
 
   getCurrentCustomer().then((c) => {
-    if (c && document.getElementById("chat-fab-wrap")) showChatFab(false);
+    if (c && document.getElementById("chat-fab-wrap")) {
+      showChatFab(false);
+      startCustomerNotifyPoll();
+    }
   });
 }
 
@@ -124,6 +134,7 @@ async function loadConversations() {
     }
 
     renderConversationList(convs);
+    applyCustomerUnreadState(convs, { notify: false });
     if (!activeConversationId || !convs.find((c) => c.id === activeConversationId)) {
       activeConversationId = convs[0].id;
     }
@@ -140,8 +151,8 @@ function renderConversationList(convs) {
   listEl.innerHTML = convs
     .map(
       (c) => `
-    <button type="button" class="chat-conv-item ${c.id === activeConversationId ? "active" : ""}" data-conv-id="${c.id}">
-      <span class="chat-conv-subject">${escapeHtml(c.subject)}</span>
+    <button type="button" class="chat-conv-item ${c.id === activeConversationId ? "active" : ""} ${c.unreadCount ? "has-unread" : ""}" data-conv-id="${c.id}">
+      <span class="chat-conv-subject">${escapeHtml(c.subject)}${unreadBadgeHtml(c.unreadCount)}</span>
       <span class="chat-conv-time">${escapeHtml(c.updatedAtFormatted || "")}</span>
     </button>`
     )
@@ -205,6 +216,8 @@ async function refreshCustomerChatLive() {
 
   try {
     const convs = await getConversations();
+    applyCustomerUnreadState(convs, { notify: false });
+
     const fingerprint = convListFingerprint(convs);
     if (fingerprint !== customerConvFingerprint) {
       customerConvFingerprint = fingerprint;
@@ -212,6 +225,63 @@ async function refreshCustomerChatLive() {
     }
     await loadMessages(activeConversationId, { silent: true, forceScroll: false });
   } catch (_) {}
+}
+
+function updateCustomerChatBadges(total) {
+  updateChatBadge(document.getElementById("chat-fab-badge"), total);
+  updateChatBadge(document.getElementById("header-chat-badge"), total);
+  updateChatBadge(document.getElementById("nav-chat-badge"), total);
+}
+
+function applyCustomerUnreadState(convs, options = {}) {
+  const total = totalUnreadCount(convs);
+  updateCustomerChatBadges(total);
+  setDocumentTitleBadge(total);
+
+  if (
+    options.notify &&
+    lastCustomerTotalUnread !== null &&
+    total > lastCustomerTotalUnread
+  ) {
+    const panelClosed = document.getElementById("chat-panel")?.classList.contains("hidden");
+    const unreadConv = convs.find((c) => c.unreadCount > 0);
+    const viewingUnread =
+      !panelClosed && unreadConv && activeConversationId === unreadConv.id;
+
+    if (panelClosed || !viewingUnread) {
+      notifyNewMessage({
+        title: "Jhul replied",
+        body: unreadConv
+          ? `New message in ${unreadConv.subject}`
+          : "You have a new message from Jhul",
+        tag: "customer-chat",
+      });
+    }
+  }
+
+  lastCustomerTotalUnread = total;
+}
+
+async function refreshCustomerNotifications() {
+  if (!document.getElementById("chat-panel")?.classList.contains("hidden")) return;
+
+  try {
+    const convs = await getConversations();
+    applyCustomerUnreadState(convs, { notify: true });
+    customerConvFingerprint = convListFingerprint(convs);
+  } catch (_) {}
+}
+
+function startCustomerNotifyPoll() {
+  stopCustomerNotifyPoll();
+  refreshCustomerNotifications();
+  customerNotifyPoller = createChatPoller(refreshCustomerNotifications, CHAT_POLL_CUSTOMER_MS);
+  customerNotifyPoller.start();
+}
+
+function stopCustomerNotifyPoll() {
+  customerNotifyPoller?.stop();
+  customerNotifyPoller = null;
 }
 
 async function sendCustomerMessage() {
@@ -318,5 +388,6 @@ function escapeHtml(str) {
 window.openChatPanel = openChatPanel;
 window.setPendingOrderForChat = setPendingOrderForChat;
 window.showChatFab = showChatFab;
+window.startCustomerNotifyPoll = startCustomerNotifyPoll;
 
 document.addEventListener("DOMContentLoaded", initChat);

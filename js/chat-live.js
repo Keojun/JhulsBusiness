@@ -7,7 +7,9 @@ const CHAT_POLL_CUSTOMER_MS = 3000;
 
 function convListFingerprint(conversations) {
   if (!Array.isArray(conversations) || !conversations.length) return "";
-  return conversations.map((c) => `${c.id}:${c.updatedAt || ""}`).join("|");
+  return conversations
+    .map((c) => `${c.id}:${c.updatedAt || ""}:${c.unreadCount || 0}`)
+    .join("|");
 }
 
 function isNearBottom(el, threshold = 80) {
@@ -103,7 +105,7 @@ function createChatPoller(pollFn, intervalMs) {
   let inFlight = false;
 
   async function tick() {
-    if (inFlight || document.hidden) return;
+    if (inFlight) return;
     inFlight = true;
     try {
       await pollFn();
@@ -138,3 +140,93 @@ function setLiveBadge(el, active) {
   el.classList.toggle("hidden", !active);
   el.setAttribute("aria-hidden", active ? "false" : "true");
 }
+
+function totalUnreadCount(conversations) {
+  if (!Array.isArray(conversations)) return 0;
+  return conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+}
+
+function updateChatBadge(el, count) {
+  if (!el) return;
+  const n = Math.max(0, Number(count) || 0);
+  el.textContent = n > 99 ? "99+" : String(n);
+  el.classList.toggle("hidden", n === 0);
+  el.setAttribute("aria-label", n ? `${n} unread messages` : "");
+}
+
+function unreadBadgeHtml(count) {
+  const n = Math.max(0, Number(count) || 0);
+  if (!n) return "";
+  const label = n > 99 ? "99+" : String(n);
+  return `<span class="chat-notify-badge chat-notify-badge-inline" aria-label="${n} unread">${label}</span>`;
+}
+
+let baseDocumentTitle = document.title;
+
+function setDocumentTitleBadge(count, titleBase) {
+  if (titleBase) baseDocumentTitle = titleBase;
+  const n = Math.max(0, Number(count) || 0);
+  document.title = n > 0 ? `(${n}) ${baseDocumentTitle}` : baseDocumentTitle;
+}
+
+function showChatToast(message, type = "info") {
+  let toast = document.getElementById("chat-notify-toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "chat-notify-toast";
+    toast.className = "chat-notify-toast hidden";
+    toast.setAttribute("role", "status");
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.className = `chat-notify-toast chat-notify-toast-${type}`;
+  clearTimeout(showChatToast._timer);
+  showChatToast._timer = setTimeout(() => toast.classList.add("hidden"), 4500);
+}
+
+function playNotifySound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    osc.type = "sine";
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.22);
+  } catch (_) {}
+}
+
+function notifyNewMessage({ title, body, tag, silent = false }) {
+  if (!silent && !document.hidden) {
+    showChatToast(body || title, "info");
+    playNotifySound();
+  }
+
+  if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+    try {
+      const n = new Notification(title, {
+        body,
+        tag: tag || "rbxdisc-chat",
+        icon: "images/jhul-logo.png",
+      });
+      n.onclick = () => {
+        window.focus();
+        n.close();
+      };
+    } catch (_) {}
+  }
+}
+
+function requestNotifyPermission() {
+  if (typeof Notification === "undefined") return;
+  if (Notification.permission === "default") {
+    Notification.requestPermission().catch(() => {});
+  }
+}
+
+document.addEventListener("click", requestNotifyPermission, { once: true });

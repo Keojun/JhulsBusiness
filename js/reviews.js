@@ -3,6 +3,31 @@
  */
 
 let selectedStars = 0;
+let lockedReviewAuthor = "";
+
+async function getReviewAuthorName() {
+  const customer = await getCurrentCustomer();
+  if (!customer) return "";
+  return customer.robloxUsername || customer.displayName || "Customer";
+}
+
+async function applyReviewAuthorField() {
+  const input = document.getElementById("review-author");
+  if (!input) return false;
+
+  const name = await getReviewAuthorName();
+  if (!name) {
+    input.value = "";
+    input.placeholder = "Log in to leave a review";
+    return false;
+  }
+
+  lockedReviewAuthor = name;
+  input.value = name;
+  input.readOnly = true;
+  input.classList.add("input-locked");
+  return true;
+}
 
 function renderStars(count) {
   return "★".repeat(count) + "☆".repeat(5 - count);
@@ -91,6 +116,7 @@ function initReviewForm() {
     activeCode = code;
     lockedSection.classList.add("hidden");
     unlockedSection.classList.remove("hidden");
+    await applyReviewAuthorField();
   });
 
   if (reviewForm) {
@@ -99,11 +125,16 @@ function initReviewForm() {
 
       if (!activeCode) return;
 
-      const author = document.getElementById("review-author").value.trim();
+      const author = lockedReviewAuthor || (await getReviewAuthorName());
       const text = document.getElementById("review-text").value.trim();
 
-      if (!author || !text) {
-        alert("Please fill in your name and review.");
+      if (!author) {
+        alert("Please log in to leave a review.");
+        return;
+      }
+
+      if (!text) {
+        alert("Please write your review.");
         return;
       }
 
@@ -131,6 +162,7 @@ function initReviewForm() {
       lockedSection.classList.remove("hidden");
       document.getElementById("review-code").value = "";
       activeCode = null;
+      lockedReviewAuthor = "";
 
       loadSiteReviews("site-reviews-grid");
     });
@@ -143,4 +175,8 @@ document.addEventListener("DOMContentLoaded", () => {
   loadFacebookReviews("fb-reviews-grid");
   loadSiteReviews("site-reviews-grid");
   initReviewForm();
+});
+
+document.addEventListener("rbxdisc:auth", () => {
+  applyReviewAuthorField();
 });

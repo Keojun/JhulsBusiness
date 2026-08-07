@@ -62,11 +62,13 @@ module.exports = async function handler(req, res) {
       const customer = await requireCustomer(req, res, sendJson);
       if (!customer) return;
 
-      const { code, author, text, stars } = body;
+      const { code, text, stars } = body;
 
-      if (!code || !author || !text || !stars) {
+      if (!code || !text || !stars) {
         return sendJson(res, 400, { error: "Missing required fields" });
       }
+
+      const author = customer.roblox_username || customer.display_name || "Customer";
 
       const upperCode = code.toUpperCase();
 

@@ -10,7 +10,7 @@ const {
 const { getCustomerFromRequest } = require("../lib/auth");
 const { formatPhilippinesDateTime } = require("../lib/datetime");
 
-async function enrichConversations(conversations) {
+async function enrichConversations(conversations, viewerRole = "admin") {
   if (!conversations.length) return [];
 
   const customerIds = [...new Set(conversations.map((c) => c.customer_id))];
@@ -20,6 +20,16 @@ async function enrichConversations(conversations) {
   const customerMap = Object.fromEntries(
     (Array.isArray(customers) ? customers : []).map((c) => [c.id, c])
   );
+
+  const convIds = conversations.map((c) => c.id);
+  const unreadSender = viewerRole === "admin" ? "customer" : "admin";
+  const unreadRows = await dbRequest("GET", "messages", {
+    query: `read_at=is.null&sender_type=eq.${unreadSender}&conversation_id=in.(${convIds.join(",")})&select=conversation_id`,
+  });
+  const unreadMap = {};
+  for (const row of Array.isArray(unreadRows) ? unreadRows : []) {
+    unreadMap[row.conversation_id] = (unreadMap[row.conversation_id] || 0) + 1;
+  }
 
   return conversations.map((c) => {
     const customer = customerMap[c.customer_id] || {};
@@ -35,6 +45,7 @@ async function enrichConversations(conversations) {
       customerRoblox: customer.roblox_username || null,
       customerName: customer.display_name || customer.roblox_username || "Customer",
       updatedAtFormatted: formatPhilippinesDateTime(c.updated_at),
+      unreadCount: unreadMap[c.id] || 0,
     };
   });
 }
@@ -124,6 +135,17 @@ module.exports = async function handler(req, res) {
               prefer: "return=minimal",
             });
           }
+        } else if (customer) {
+          const unread = (Array.isArray(data) ? data : []).filter(
+            (m) => m.sender_type === "admin" && !m.read_at
+          );
+          for (const m of unread) {
+            await dbRequest("PATCH", "messages", {
+              query: `id=eq.${m.id}`,
+              body: { read_at: new Date().toISOString() },
+              prefer: "return=minimal",
+            });
+          }
         }
 
         return sendJson(res, 200, messages);
@@ -166,7 +188,7 @@ module.exports = async function handler(req, res) {
         const data = await dbRequest("GET", "conversations", {
           query: "select=*&order=updated_at.desc",
         });
-        return sendJson(res, 200, await enrichConversations(Array.isArray(data) ? data : []));
+        return sendJson(res, 200, await enrichConversations(Array.isArray(data) ? data : [], "admin"));
       }
 
       if (!customer) return sendJson(res, 401, { error: "Login required" });
@@ -174,7 +196,7 @@ module.exports = async function handler(req, res) {
       const data = await dbRequest("GET", "conversations", {
         query: `customer_id=eq.${customer.id}&select=*&order=updated_at.desc`,
       });
-      return sendJson(res, 200, await enrichConversations(Array.isArray(data) ? data : []));
+      return sendJson(res, 200, await enrichConversations(Array.isArray(data) ? data : [], "customer"));
     }
 
     if (req.method === "POST") {
@@ -195,7 +217,7 @@ module.exports = async function handler(req, res) {
       });
 
       const conv = Array.isArray(rows) ? rows[0] : rows;
-      const [enriched] = await enrichConversations([conv]);
+      const [enriched] = await enrichConversations([conv], "customer");
       return sendJson(res, 201, enriched);
     }
 
