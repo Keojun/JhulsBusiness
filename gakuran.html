@@ -263,23 +263,31 @@
   <!-- Chat Panel -->
   <aside id="chat-panel" class="chat-panel hidden" aria-label="Chat with Jhul">
     <div class="chat-panel-header">
-      <div>
+      <div class="chat-panel-header-text">
         <h3>💬 Chat with Jhul</h3>
-        <p id="chat-thread-header">General</p>
+        <p id="chat-thread-header">Message about your order</p>
       </div>
       <button type="button" id="btn-close-chat" class="chat-close" aria-label="Close chat">&times;</button>
     </div>
     <div class="chat-panel-body">
       <div class="chat-sidebar">
-        <button type="button" id="btn-new-chat" class="btn btn-outline btn-sm chat-new-btn">+ New Chat</button>
+        <p class="chat-sidebar-label">Your order chats</p>
         <div id="chat-conv-list" class="chat-conv-list"></div>
       </div>
       <div class="chat-main">
-        <div id="chat-messages" class="chat-messages" data-empty-html="<div class=&quot;chat-empty-thread&quot;><img src=&quot;images/jhul-waving.png&quot; alt=&quot;&quot; class=&quot;sticker&quot; style=&quot;width:70px;&quot; /><p>Say hi to Jhul! Ask about your order, payment, or rerolls.</p></div>"></div>
-        <form id="chat-form" class="chat-form">
-          <input type="text" id="chat-input" placeholder="Type your message…" maxlength="2000" autocomplete="off" required />
-          <button type="submit" class="btn btn-primary">Send</button>
-        </form>
+        <div id="chat-conv-chips" class="chat-conv-chips hidden" aria-label="Switch chat"></div>
+        <div id="chat-messages" class="chat-messages" data-empty-html="<div class=&quot;chat-empty-thread&quot;><img src=&quot;images/jhul-waving.png&quot; alt=&quot;&quot; class=&quot;sticker&quot; style=&quot;width:70px;&quot; /><p>Say hi to Jhul! Ask about payment, delivery, or rerolls.</p></div>"></div>
+        <div class="chat-composer">
+          <p id="chat-composer-hint" class="chat-composer-hint">Type your message below</p>
+          <form id="chat-form" class="chat-form">
+            <label class="visually-hidden" for="chat-input">Message to Jhul</label>
+            <textarea id="chat-input" rows="2" placeholder="Type your message to Jhul…" maxlength="2000" autocomplete="off" required></textarea>
+            <button type="submit" class="btn btn-primary btn-send" aria-label="Send message">
+              <span class="btn-send-icon" aria-hidden="true">➤</span>
+              <span class="btn-send-label">Send</span>
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   </aside>

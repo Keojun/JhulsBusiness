@@ -29,11 +29,10 @@ function initChat() {
   const headerChatBtn = document.getElementById("btn-header-chat");
   const fab = document.getElementById("chat-fab");
   const closeBtn = document.getElementById("btn-close-chat");
-  const panel = document.getElementById("chat-panel");
   const form = document.getElementById("chat-form");
-  const newChatBtn = document.getElementById("btn-new-chat");
+  const input = document.getElementById("chat-input");
 
-  openBtn?.addEventListener("click", () => openChatPanel());
+  openBtn?.addEventListener("click", () => openChatPanel(pendingOrderForChat || null));
   headerChatBtn?.addEventListener("click", () => openChatPanel(pendingOrderForChat || null));
   fab?.addEventListener("click", () => openChatPanel(pendingOrderForChat || null));
   closeBtn?.addEventListener("click", () => closeChatPanel());
@@ -43,7 +42,14 @@ function initChat() {
     await sendCustomerMessage();
   });
 
-  newChatBtn?.addEventListener("click", () => startNewConversation());
+  input?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      form?.requestSubmit();
+    }
+  });
+
+  input?.addEventListener("input", autoResizeChatInput);
 
   document.addEventListener("rbxdisc:auth", (e) => {
     if (e.detail.customer) {
@@ -63,6 +69,30 @@ function initChat() {
       openChatPanel(pendingOrderForChat);
     }
   });
+}
+
+function autoResizeChatInput() {
+  const input = document.getElementById("chat-input");
+  if (!input) return;
+  input.style.height = "auto";
+  input.style.height = `${Math.min(input.scrollHeight, 140)}px`;
+}
+
+function setChatComposerEnabled(enabled, hint) {
+  const form = document.getElementById("chat-form");
+  const input = document.getElementById("chat-input");
+  const hintEl = document.getElementById("chat-composer-hint");
+  const composer = document.querySelector(".chat-composer");
+
+  form?.classList.toggle("chat-form-disabled", !enabled);
+  composer?.classList.toggle("chat-composer-disabled", !enabled);
+  if (input) {
+    input.disabled = !enabled;
+    if (!enabled) input.value = "";
+  }
+  if (hintEl && hint !== undefined) {
+    hintEl.textContent = hint;
+  }
 }
 
 function showChatFab(pulse = false) {
@@ -127,6 +157,66 @@ function closeChatPanel() {
   });
 }
 
+async function showOrderPickerState() {
+  const threadEl = document.getElementById("chat-messages");
+  const headerEl = document.getElementById("chat-thread-header");
+  if (!threadEl) return;
+
+  activeConversationId = null;
+  setChatComposerEnabled(false, "Place or select an order to start chatting");
+
+  if (headerEl) headerEl.textContent = "Choose an order";
+
+  threadEl.innerHTML = '<p class="chat-loading">Loading your orders…</p>';
+
+  try {
+    const orders = await getCustomerOrders();
+
+    if (!orders.length) {
+      threadEl.innerHTML = `
+        <div class="chat-empty-thread chat-order-prompt">
+          <img src="images/jhul-waving.png" alt="" class="sticker" style="width:72px;" />
+          <h4>Chat opens after you order</h4>
+          <p>Place a Gakuran reroll order first — then you can message Jhul about payment, delivery, or your rerolls.</p>
+          <a href="#order-form" class="btn btn-primary btn-sm chat-order-cta" id="chat-go-order">Go to order form</a>
+        </div>`;
+      document.getElementById("chat-go-order")?.addEventListener("click", () => {
+        closeChatPanel();
+        document.getElementById("order-form")?.scrollIntoView({ behavior: "smooth" });
+      });
+      return;
+    }
+
+    const items = orders
+      .map(
+        (o) => `
+      <button type="button" class="chat-order-pick" data-order-id="${escapeHtml(o.id)}">
+        <span class="chat-order-pick-id">${escapeHtml(o.id)}</span>
+        <span class="chat-order-pick-meta">${escapeHtml(o.rerollAmount)} rerolls · ${escapeHtml(o.status || "pending")}</span>
+        <span class="chat-order-pick-date">${escapeHtml(o.date || "")}</span>
+      </button>`
+      )
+      .join("");
+
+    threadEl.innerHTML = `
+      <div class="chat-empty-thread chat-order-prompt">
+        <img src="images/jhul-waving.png" alt="" class="sticker" style="width:72px;" />
+        <h4>Message Jhul about an order</h4>
+        <p>Pick which order you want to talk about:</p>
+        <div class="chat-order-list">${items}</div>
+      </div>`;
+
+    threadEl.querySelectorAll(".chat-order-pick").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const order = orders.find((o) => o.id === btn.dataset.orderId);
+        if (order) await openOrderChat(order);
+      });
+    });
+  } catch (err) {
+    threadEl.innerHTML = `<p class="chat-error">${escapeHtml(err.message)}</p>`;
+  }
+}
+
 async function loadConversations() {
   const listEl = document.getElementById("chat-conv-list");
   if (!listEl) return;
@@ -136,18 +226,19 @@ async function loadConversations() {
   try {
     const convs = await getConversations();
     customerConvFingerprint = convListFingerprint(convs);
+
     if (convs.length === 0) {
-      const conv = await createConversation("General");
-      activeConversationId = conv.id;
-      renderConversationList([conv]);
-      renderMessageThread(document.getElementById("chat-messages"), [], {
-        forceScroll: true,
-      });
+      renderConversationList([]);
+      renderConvChips([]);
+      await showOrderPickerState();
       return;
     }
 
     renderConversationList(convs);
+    renderConvChips(convs);
     applyCustomerUnreadState(convs, { notify: false });
+    setChatComposerEnabled(true, "Type your message below");
+
     if (!activeConversationId || !convs.find((c) => c.id === activeConversationId)) {
       activeConversationId = convs[0].id;
     }
@@ -157,15 +248,55 @@ async function loadConversations() {
   }
 }
 
+function renderConvChips(convs) {
+  const chipsEl = document.getElementById("chat-conv-chips");
+  if (!chipsEl) return;
+
+  if (!convs.length || convs.length === 1) {
+    chipsEl.classList.add("hidden");
+    chipsEl.innerHTML = "";
+    return;
+  }
+
+  chipsEl.classList.remove("hidden");
+  chipsEl.innerHTML = convs
+    .map(
+      (c) => `
+    <button type="button" class="chat-conv-chip ${c.id === activeConversationId ? "active" : ""} ${c.unreadCount ? "has-unread" : ""}" data-conv-id="${c.id}">
+      ${escapeHtml(c.orderId ? `Order ${c.orderId}` : c.subject)}${unreadBadgeHtml(c.unreadCount)}
+    </button>`
+    )
+    .join("");
+
+  chipsEl.querySelectorAll(".chat-conv-chip").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      activeConversationId = btn.dataset.convId;
+      clearConversationCache(activeConversationId);
+      chipsEl.querySelectorAll(".chat-conv-chip").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("chat-conv-list")?.querySelectorAll(".chat-conv-item").forEach((b) => {
+        b.classList.toggle("active", b.dataset.convId === activeConversationId);
+      });
+      setChatComposerEnabled(true, "Type your message below");
+      await loadMessages(activeConversationId, { forceFull: true });
+    });
+  });
+}
+
 function renderConversationList(convs) {
   const listEl = document.getElementById("chat-conv-list");
   if (!listEl) return;
+
+  if (!convs.length) {
+    listEl.innerHTML = '<p class="chat-empty">No chats yet — pick an order below.</p>';
+    return;
+  }
 
   listEl.innerHTML = convs
     .map(
       (c) => `
     <button type="button" class="chat-conv-item ${c.id === activeConversationId ? "active" : ""} ${c.unreadCount ? "has-unread" : ""}" data-conv-id="${c.id}">
-      <span class="chat-conv-subject">${escapeHtml(c.subject)}${unreadBadgeHtml(c.unreadCount)}</span>
+      <span class="chat-conv-subject">${escapeHtml(c.orderId ? `Order ${c.orderId}` : c.subject)}${unreadBadgeHtml(c.unreadCount)}</span>
       <span class="chat-conv-time">${escapeHtml(c.updatedAtFormatted || "")}</span>
     </button>`
     )
@@ -177,6 +308,10 @@ function renderConversationList(convs) {
       clearConversationCache(activeConversationId);
       listEl.querySelectorAll(".chat-conv-item").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
+      document.getElementById("chat-conv-chips")?.querySelectorAll(".chat-conv-chip").forEach((b) => {
+        b.classList.toggle("active", b.dataset.convId === activeConversationId);
+      });
+      setChatComposerEnabled(true, "Type your message below");
       await loadMessages(activeConversationId, { forceFull: true });
     });
   });
@@ -193,7 +328,7 @@ async function loadMessages(conversationId, options = {}) {
       const conv = convs.find((c) => c.id === conversationId);
       if (headerEl && conv) {
         headerEl.textContent = conv.orderId
-          ? `${conv.subject} · Order ${conv.orderId}`
+          ? `Order ${conv.orderId} · ${conv.rerollAmount ? conv.rerollAmount + " rerolls" : conv.subject}`
           : conv.subject;
       }
     }
@@ -235,6 +370,7 @@ async function refreshCustomerChatLive() {
     if (fingerprint !== customerConvFingerprint) {
       customerConvFingerprint = fingerprint;
       renderConversationList(convs);
+      renderConvChips(convs);
     }
     await loadMessages(activeConversationId, { silent: true, forceScroll: false });
   } catch (_) {}
@@ -265,7 +401,7 @@ function applyCustomerUnreadState(convs, options = {}) {
       notifyNewMessage({
         title: "Jhul replied",
         body: unreadConv
-          ? `New message in ${unreadConv.subject}`
+          ? `New message in ${unreadConv.orderId ? "Order " + unreadConv.orderId : unreadConv.subject}`
           : "You have a new message from Jhul",
         tag: "customer-chat",
       });
@@ -314,6 +450,7 @@ async function sendCustomerMessage() {
 
   appendMessages(threadEl, [optimistic], { forceScroll: true });
   input.value = "";
+  autoResizeChatInput();
   input.disabled = true;
 
   try {
@@ -330,24 +467,11 @@ async function sendCustomerMessage() {
   } catch (err) {
     removePendingMessage(threadEl, tempId);
     input.value = text;
+    autoResizeChatInput();
     alert(err.message);
   } finally {
     input.disabled = false;
     input.focus();
-  }
-}
-
-async function startNewConversation() {
-  const subject = prompt("Chat subject (e.g. Order question):", "General");
-  if (subject === null) return;
-  try {
-    const conv = await createConversation(subject.trim() || "General");
-    activeConversationId = conv.id;
-    clearConversationCache(conv.id);
-    await loadConversations();
-    await loadMessages(conv.id, { forceFull: true });
-  } catch (err) {
-    alert(err.message);
   }
 }
 
@@ -360,15 +484,15 @@ async function openOrderChat(order) {
     }
     activeConversationId = conv.id;
     clearConversationCache(conv.id);
+    setChatComposerEnabled(true, "Type your message below");
     await loadConversations();
     await loadMessages(conv.id, { forceFull: true });
 
-    if (order.username) {
-      const input = document.getElementById("chat-input");
-      if (input && !input.value) {
-        input.placeholder = `Hi Jhul! I placed order ${order.id} for ${order.rerollAmount} rerolls…`;
-      }
+    const input = document.getElementById("chat-input");
+    if (input && !input.value) {
+      input.placeholder = `Hi Jhul! About order ${order.id} (${order.rerollAmount} rerolls)…`;
     }
+    input?.focus();
   } catch (err) {
     alert(err.message);
   }

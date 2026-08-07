@@ -24,13 +24,19 @@ module.exports = async function handler(req, res) {
     const body = await parseBody(req);
 
     if (req.method === "GET") {
-      if (!checkAdmin(req, body)) {
-        return sendJson(res, 401, { error: "Unauthorized" });
+      const isAdmin = checkAdmin(req, body);
+      const customer = !isAdmin ? await getCustomerFromRequest(req) : null;
+
+      if (!isAdmin && !customer) {
+        return sendJson(res, 401, { error: "Login required" });
       }
 
-      const data = await dbRequest("GET", "orders", {
-        query: "select=*&order=created_at.desc",
-      });
+      let query = "select=*&order=created_at.desc";
+      if (!isAdmin) {
+        query = `customer_id=eq.${customer.id}&select=*&order=created_at.desc`;
+      }
+
+      const data = await dbRequest("GET", "orders", { query });
 
       const orders = (Array.isArray(data) ? data : []).map((o) => ({
         id: o.id,
