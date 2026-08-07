@@ -13,6 +13,23 @@ module.exports = async function handler(req, res) {
     }
 
     const body = await parseBody(req);
+    const url = new URL(req.url || "/", "http://localhost");
+    const action = url.searchParams.get("action") || body.action;
+
+    if (req.method === "POST" && action === "validate") {
+      const { code } = body;
+      if (!code) return sendJson(res, 400, { error: "code required" });
+
+      const upperCode = code.toUpperCase();
+      const rows = await dbRequest("GET", "review_codes", {
+        query: `code=eq.${encodeURIComponent(upperCode)}&used=eq.false&select=*`,
+      });
+
+      const data = Array.isArray(rows) ? rows[0] : null;
+      if (!data) return sendJson(res, 404, { error: "Invalid or used code" });
+
+      return sendJson(res, 200, { valid: true, orderId: data.order_id, code: upperCode });
+    }
 
     if (req.method === "GET") {
       const type = new URL(req.url || "/", "http://localhost").searchParams.get("type") || "site";

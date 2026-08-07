@@ -150,7 +150,7 @@ async function getOrders() {
 
 async function verifyAdminPassword(password) {
   try {
-    const res = await fetch("/api/admin/login", {
+    const res = await fetch("/api/auth?action=admin-login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password }),
@@ -164,10 +164,10 @@ async function verifyAdminPassword(password) {
 
 async function completeOrderApi(orderId) {
   try {
-    const res = await fetch("/api/orders/complete", {
+    const res = await fetch("/api/orders", {
       method: "POST",
       headers: adminHeaders(),
-      body: JSON.stringify({ orderId }),
+      body: JSON.stringify({ action: "complete", orderId }),
     });
     const data = await res.json();
     if (res.ok) return data.code;
@@ -193,10 +193,10 @@ async function completeOrderApi(orderId) {
 
 async function validateReviewCode(code) {
   try {
-    const res = await fetch("/api/review-codes/validate", {
+    const res = await fetch("/api/reviews?action=validate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ action: "validate", code }),
     });
     if (res.ok) {
       const data = await res.json();
@@ -259,7 +259,7 @@ async function getFacebookReviews() {
 }
 
 async function customerSignup({ email, password, robloxUsername, displayName }) {
-  const res = await fetch("/api/auth/signup", {
+  const res = await fetch("/api/auth?action=signup", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password, robloxUsername, displayName }),
@@ -272,7 +272,7 @@ async function customerSignup({ email, password, robloxUsername, displayName }) 
 }
 
 async function customerLogin({ email, password }) {
-  const res = await fetch("/api/auth/login", {
+  const res = await fetch("/api/auth?action=login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -286,7 +286,7 @@ async function customerLogin({ email, password }) {
 
 async function customerLogout() {
   try {
-    await fetch("/api/auth/logout", {
+    await fetch("/api/auth?action=logout", {
       method: "POST",
       headers: customerHeaders(),
     });
@@ -299,7 +299,7 @@ async function getCurrentCustomer(forceRefresh = false) {
   if (customerCache && !forceRefresh) return customerCache;
 
   try {
-    const res = await fetch("/api/auth/me", { headers: customerHeaders() });
+    const res = await fetch("/api/auth?action=me", { headers: customerHeaders() });
     if (!res.ok) {
       setCustomerToken("");
       return null;
@@ -314,14 +314,14 @@ async function getCurrentCustomer(forceRefresh = false) {
 
 async function getConversations(asAdmin = false) {
   const headers = asAdmin ? adminHeaders() : customerHeaders();
-  const res = await fetch("/api/conversations", { headers });
+  const res = await fetch("/api/chat?resource=conversations", { headers });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Failed to load conversations");
   return data;
 }
 
 async function createConversation(subject, orderId = null) {
-  const res = await fetch("/api/conversations", {
+  const res = await fetch("/api/chat?resource=conversations", {
     method: "POST",
     headers: customerHeaders(),
     body: JSON.stringify({ subject, orderId }),
@@ -333,9 +333,10 @@ async function createConversation(subject, orderId = null) {
 
 async function getMessages(conversationId, asAdmin = false) {
   const headers = asAdmin ? adminHeaders() : customerHeaders();
-  const res = await fetch(`/api/messages?conversationId=${encodeURIComponent(conversationId)}`, {
-    headers,
-  });
+  const res = await fetch(
+    `/api/chat?resource=messages&conversationId=${encodeURIComponent(conversationId)}`,
+    { headers }
+  );
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Failed to load messages");
   return data;
@@ -343,11 +344,14 @@ async function getMessages(conversationId, asAdmin = false) {
 
 async function sendChatMessage(conversationId, body, asAdmin = false) {
   const headers = asAdmin ? adminHeaders() : customerHeaders();
-  const res = await fetch(`/api/messages?conversationId=${encodeURIComponent(conversationId)}`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ body }),
-  });
+  const res = await fetch(
+    `/api/chat?resource=messages&conversationId=${encodeURIComponent(conversationId)}`,
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ body }),
+    }
+  );
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Failed to send message");
   return data;

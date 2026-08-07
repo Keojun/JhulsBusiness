@@ -4,14 +4,16 @@ const {
   checkAdmin,
   parseBody,
   sendJson,
+  generateReviewCode,
 } = require("../lib/db");
 const { formatPhilippinesDateTime } = require("../lib/datetime");
+const { getCustomerFromRequest } = require("../lib/auth");
 
 module.exports = async function handler(req, res) {
   try {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Admin-Password");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Admin-Password, Authorization");
 
     if (req.method === "OPTIONS") return res.status(200).end();
 
@@ -47,6 +49,30 @@ module.exports = async function handler(req, res) {
     }
 
     if (req.method === "POST") {
+      if (body.action === "complete") {
+        if (!checkAdmin(req, body)) {
+          return sendJson(res, 401, { error: "Unauthorized" });
+        }
+
+        const { orderId } = body;
+        if (!orderId) return sendJson(res, 400, { error: "orderId required" });
+
+        const code = generateReviewCode();
+
+        await dbRequest("POST", "review_codes", {
+          body: { code, order_id: orderId, used: false },
+          prefer: "return=minimal",
+        });
+
+        await dbRequest("PATCH", "orders", {
+          query: `id=eq.${encodeURIComponent(orderId)}`,
+          body: { status: "completed", review_code: code },
+          prefer: "return=minimal",
+        });
+
+        return sendJson(res, 200, { code, orderId });
+      }
+
       const { id, username, rerollAmount, pricePHP, paymentMethod, status, createdAt } = body;
 
       if (!id || !username || !rerollAmount) {
@@ -64,7 +90,6 @@ module.exports = async function handler(req, res) {
       if (pricePHP != null) row.price_php = Number(pricePHP);
       if (paymentMethod) row.payment_method = paymentMethod;
 
-      const { getCustomerFromRequest } = require("../lib/auth");
       const customer = await getCustomerFromRequest(req);
       if (customer) row.customer_id = customer.id;
 
