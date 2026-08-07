@@ -193,7 +193,7 @@ async function validateReviewCode(code) {
       const data = await res.json();
       return { code: data.code, orderId: data.orderId };
     }
-    if (res.status === 404) return null;
+    if (res.status === 404 || res.status === 403) return null;
   } catch (_) {}
 
   const codes = getReviewCodesLocal();
@@ -248,15 +248,20 @@ async function getFacebookReviews() {
   return [];
 }
 
-async function customerSignup({ email, password, robloxUsername, displayName }) {
-  const res = await customerFetch("/api/auth?action=signup", {
-    method: "POST",
-    body: JSON.stringify({ email, password, robloxUsername, displayName }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Signup failed");
-  customerCache = data.customer;
-  return data.customer;
+async function customerLogout() {
+  const previousCustomerId = customerCache?.id;
+  try {
+    await customerFetch("/api/auth?action=logout", { method: "POST" });
+  } catch (_) {}
+  customerCache = null;
+  clearReviewUnlockForCustomer(previousCustomerId);
+  sessionStorage.removeItem("rbxdisc_review_unlocked");
+  document.dispatchEvent(new CustomEvent("rbxdisc:logout"));
+}
+
+function clearReviewUnlockForCustomer(customerId) {
+  if (!customerId) return;
+  sessionStorage.removeItem(`rbxdisc_review_unlocked_${customerId}`);
 }
 
 async function customerLogin({ email, password }) {
@@ -266,15 +271,21 @@ async function customerLogin({ email, password }) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Login failed");
+  sessionStorage.removeItem("rbxdisc_review_unlocked");
   customerCache = data.customer;
   return data.customer;
 }
 
-async function customerLogout() {
-  try {
-    await customerFetch("/api/auth?action=logout", { method: "POST" });
-  } catch (_) {}
-  customerCache = null;
+async function customerSignup({ email, password, robloxUsername, displayName }) {
+  const res = await customerFetch("/api/auth?action=signup", {
+    method: "POST",
+    body: JSON.stringify({ email, password, robloxUsername, displayName }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Signup failed");
+  sessionStorage.removeItem("rbxdisc_review_unlocked");
+  customerCache = data.customer;
+  return data.customer;
 }
 
 async function getCurrentCustomer(forceRefresh = false) {
@@ -296,10 +307,17 @@ async function getCurrentCustomer(forceRefresh = false) {
 }
 
 async function getConversations(asAdmin = false) {
-  const res = await fetch("/api/chat?resource=conversations", {
-    ...FETCH_CREDENTIALS,
-    headers: asAdmin ? adminHeaders() : customerHeaders(),
-  });
+  if (asAdmin) {
+    const res = await fetch("/api/chat?resource=conversations", {
+      ...FETCH_CREDENTIALS,
+      headers: adminHeaders(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to load conversations");
+    return data;
+  }
+
+  const res = await customerFetch("/api/chat?resource=conversations");
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Failed to load conversations");
   return data;
@@ -319,25 +337,29 @@ async function getMessages(conversationId, asAdmin = false, since = null) {
   let url = `/api/chat?resource=messages&conversationId=${encodeURIComponent(conversationId)}`;
   if (since) url += `&since=${encodeURIComponent(since)}`;
 
-  const res = await fetch(url, {
-    ...FETCH_CREDENTIALS,
-    headers: asAdmin ? adminHeaders() : customerHeaders(),
-  });
+  const res = asAdmin
+    ? await fetch(url, { ...FETCH_CREDENTIALS, headers: adminHeaders() })
+    : await customerFetch(url);
+
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Failed to load messages");
   return data;
 }
 
 async function sendChatMessage(conversationId, body, asAdmin = false) {
-  const res = await fetch(
-    `/api/chat?resource=messages&conversationId=${encodeURIComponent(conversationId)}`,
-    {
-      method: "POST",
-      ...FETCH_CREDENTIALS,
-      headers: asAdmin ? adminHeaders() : customerHeaders(),
-      body: JSON.stringify({ body }),
-    }
-  );
+  const url = `/api/chat?resource=messages&conversationId=${encodeURIComponent(conversationId)}`;
+  const res = asAdmin
+    ? await fetch(url, {
+        method: "POST",
+        ...FETCH_CREDENTIALS,
+        headers: adminHeaders(),
+        body: JSON.stringify({ body }),
+      })
+    : await customerFetch(url, {
+        method: "POST",
+        body: JSON.stringify({ body }),
+      });
+
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Failed to send message");
   return data;

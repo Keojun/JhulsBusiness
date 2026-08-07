@@ -51,8 +51,15 @@ function initModals() {
   const step1 = document.getElementById("instructions-step-1");
   const step2 = document.getElementById("instructions-step-2");
 
-  function showReviewSection() {
-    sessionStorage.setItem("rbxdisc_review_unlocked", "1");
+  function reviewUnlockKey(customerId) {
+    return customerId ? `rbxdisc_review_unlocked_${customerId}` : null;
+  }
+
+  async function showReviewSection() {
+    const customer = await getCurrentCustomer();
+    const key = reviewUnlockKey(customer?.id);
+    if (key) sessionStorage.setItem(key, "1");
+
     const reviewSection = document.getElementById("leave-review");
     const navLink = document.getElementById("nav-leave-review");
     if (reviewSection) {
@@ -67,12 +74,15 @@ function initModals() {
     if (navLink) navLink.classList.remove("hidden");
   }
 
-  if (sessionStorage.getItem("rbxdisc_review_unlocked") === "1") {
+  getCurrentCustomer().then((customer) => {
+    const key = reviewUnlockKey(customer?.id);
+    if (!key || sessionStorage.getItem(key) !== "1") return;
+
     const reviewSection = document.getElementById("leave-review");
     const navLink = document.getElementById("nav-leave-review");
     if (reviewSection) reviewSection.classList.remove("hidden");
     if (navLink) navLink.classList.remove("hidden");
-  }
+  });
 
   if (continueBtn && step1 && step2) {
     continueBtn.addEventListener("click", () => {

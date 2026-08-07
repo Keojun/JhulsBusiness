@@ -1,5 +1,6 @@
 const { isDbConfigured, dbRequest, parseBody, sendJson } = require("../lib/db");
 const { requireCustomer } = require("../lib/auth");
+const { assertOrderOwnedByCustomer } = require("../lib/order-access");
 
 module.exports = async function handler(req, res) {
   try {
@@ -31,6 +32,11 @@ module.exports = async function handler(req, res) {
 
       const data = Array.isArray(rows) ? rows[0] : null;
       if (!data) return sendJson(res, 404, { error: "Invalid or used code" });
+
+      const ownership = await assertOrderOwnedByCustomer(data.order_id, customer);
+      if (!ownership.ok) {
+        return sendJson(res, ownership.status, { error: ownership.error });
+      }
 
       return sendJson(res, 200, { valid: true, orderId: data.order_id, code: upperCode });
     }
@@ -78,6 +84,11 @@ module.exports = async function handler(req, res) {
 
       const codeData = Array.isArray(codeRows) ? codeRows[0] : null;
       if (!codeData) return sendJson(res, 404, { error: "Invalid or used code" });
+
+      const ownership = await assertOrderOwnedByCustomer(codeData.order_id, customer);
+      if (!ownership.ok) {
+        return sendJson(res, ownership.status, { error: ownership.error });
+      }
 
       const reviewRows = await dbRequest("POST", "site_reviews", {
         body: {
