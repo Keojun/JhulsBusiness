@@ -315,14 +315,14 @@ async function createConversation(subject, orderId = null) {
   return data;
 }
 
-async function getMessages(conversationId, asAdmin = false) {
-  const res = await fetch(
-    `/api/chat?resource=messages&conversationId=${encodeURIComponent(conversationId)}`,
-    {
-      ...FETCH_CREDENTIALS,
-      headers: asAdmin ? adminHeaders() : customerHeaders(),
-    }
-  );
+async function getMessages(conversationId, asAdmin = false, since = null) {
+  let url = `/api/chat?resource=messages&conversationId=${encodeURIComponent(conversationId)}`;
+  if (since) url += `&since=${encodeURIComponent(since)}`;
+
+  const res = await fetch(url, {
+    ...FETCH_CREDENTIALS,
+    headers: asAdmin ? adminHeaders() : customerHeaders(),
+  });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Failed to load messages");
   return data;

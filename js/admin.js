@@ -9,7 +9,9 @@ let clockInterval = null;
 let adminActiveView = "orders";
 let adminConversations = [];
 let adminActiveConvId = null;
-let adminChatPoll = null;
+let adminChatPoller = null;
+let adminConvFingerprint = "";
+const adminMessageCache = new Map();
 
 function initAdmin() {
   const loginForm = document.getElementById("admin-login");
@@ -380,20 +382,25 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-async function loadAdminConversations() {
+async function loadAdminConversations(silent = false) {
   const listEl = document.getElementById("admin-conv-list");
   if (!listEl) return;
 
-  listEl.innerHTML = '<p class="chat-loading">Loading conversations…</p>';
+  if (!silent) {
+    listEl.innerHTML = '<p class="chat-loading">Loading conversations…</p>';
+  }
 
   try {
     adminConversations = await getConversations(true);
+    adminConvFingerprint = convListFingerprint(adminConversations);
     renderAdminConvList();
     if (adminActiveConvId) {
-      await loadAdminMessages(adminActiveConvId);
+      await loadAdminMessages(adminActiveConvId, { forceFull: !silent });
     }
   } catch (err) {
-    listEl.innerHTML = `<p class="chat-error">${escapeHtml(err.message)}</p>`;
+    if (!silent) {
+      listEl.innerHTML = `<p class="chat-error">${escapeHtml(err.message)}</p>`;
+    }
   }
 }
 
@@ -425,12 +432,13 @@ function renderAdminConvList() {
 
 async function selectAdminConversation(convId) {
   adminActiveConvId = convId;
+  adminMessageCache.delete(convId);
   renderAdminConvList();
-  await loadAdminMessages(convId);
+  await loadAdminMessages(convId, { forceFull: true });
   document.getElementById("admin-chat-form")?.classList.remove("hidden");
 }
 
-async function loadAdminMessages(convId) {
+async function loadAdminMessages(convId, options = {}) {
   const threadEl = document.getElementById("admin-chat-messages");
   const headerEl = document.getElementById("admin-chat-header");
   const conv = adminConversations.find((c) => c.id === convId);
@@ -442,43 +450,80 @@ async function loadAdminMessages(convId) {
       ${conv.orderId ? `<span class="admin-chat-order-tag">Order: ${escapeHtml(conv.orderId)}</span>` : ""}`;
   }
 
-  try {
-    const messages = await getMessages(convId, true);
-    if (!threadEl) return;
+  if (!threadEl) return;
 
-    if (!messages.length) {
-      threadEl.innerHTML = '<p class="chat-empty">No messages yet.</p>';
+  try {
+    const cached = adminMessageCache.get(convId) || [];
+    const since = options.forceFull ? null : getLastMessageTimestamp(cached);
+    const messages = await getMessages(convId, true, since);
+
+    if (since && messages.length) {
+      const merged = [...cached, ...messages];
+      adminMessageCache.set(convId, merged);
+      appendMessages(threadEl, messages);
       return;
     }
 
-    threadEl.innerHTML = messages
-      .map(
-        (m) => `
-      <div class="chat-bubble chat-bubble-${m.senderType}">
-        <p>${escapeHtml(m.body)}</p>
-        <time>${escapeHtml(m.createdAtFormatted || "")}</time>
-      </div>`
-      )
-      .join("");
-
-    threadEl.scrollTop = threadEl.scrollHeight;
+    const fullMessages = since ? cached : messages;
+    adminMessageCache.set(convId, fullMessages);
+    renderMessageThread(threadEl, fullMessages, { forceScroll: options.forceFull !== false });
   } catch (err) {
-    if (threadEl) threadEl.innerHTML = `<p class="chat-error">${escapeHtml(err.message)}</p>`;
+    if (!options.silent) {
+      threadEl.innerHTML = `<p class="chat-error">${escapeHtml(err.message)}</p>`;
+    }
   }
+}
+
+async function refreshAdminChatLive() {
+  if (adminActiveView !== "messages" || document.hidden) return;
+
+  try {
+    const convs = await getConversations(true);
+    const fingerprint = convListFingerprint(convs);
+
+    if (fingerprint !== adminConvFingerprint) {
+      adminConvFingerprint = fingerprint;
+      adminConversations = convs;
+      renderAdminConvList();
+    }
+
+    if (adminActiveConvId) {
+      await loadAdminMessages(adminActiveConvId, { silent: true });
+    }
+  } catch (_) {}
 }
 
 async function sendAdminReply() {
   const input = document.getElementById("admin-chat-input");
+  const threadEl = document.getElementById("admin-chat-messages");
   const text = input?.value.trim();
   if (!text || !adminActiveConvId) return;
 
+  const tempId = `pending-${Date.now()}`;
+  const optimistic = {
+    id: tempId,
+    senderType: "admin",
+    body: text,
+    createdAtFormatted: "Sending…",
+    pending: true,
+  };
+
+  appendMessages(threadEl, [optimistic], { forceScroll: true });
+  input.value = "";
   input.disabled = true;
+
   try {
-    await sendChatMessage(adminActiveConvId, text, true);
-    input.value = "";
-    await loadAdminMessages(adminActiveConvId);
-    await loadAdminConversations();
+    const sent = await sendChatMessage(adminActiveConvId, text, true);
+    replacePendingMessage(threadEl, tempId, sent);
+
+    const cached = adminMessageCache.get(adminActiveConvId) || [];
+    const withoutPending = cached.filter((m) => m.id !== tempId);
+    adminMessageCache.set(adminActiveConvId, [...withoutPending, sent]);
+
+    await loadAdminConversations(true);
   } catch (err) {
+    removePendingMessage(threadEl, tempId);
+    input.value = text;
     showToast(err.message, "error");
   } finally {
     input.disabled = false;
@@ -488,20 +533,15 @@ async function sendAdminReply() {
 
 function startAdminChatPoll() {
   stopAdminChatPoll();
-  adminChatPoll = setInterval(async () => {
-    if (adminActiveView !== "messages") return;
-    try {
-      await loadAdminConversations();
-      if (adminActiveConvId) await loadAdminMessages(adminActiveConvId);
-    } catch (_) {}
-  }, 5000);
+  setLiveBadge(document.getElementById("admin-chat-live"), true);
+  adminChatPoller = createChatPoller(refreshAdminChatLive, CHAT_POLL_ADMIN_MS);
+  adminChatPoller.start();
 }
 
 function stopAdminChatPoll() {
-  if (adminChatPoll) {
-    clearInterval(adminChatPoll);
-    adminChatPoll = null;
-  }
+  adminChatPoller?.stop();
+  adminChatPoller = null;
+  setLiveBadge(document.getElementById("admin-chat-live"), false);
 }
 
 document.addEventListener("DOMContentLoaded", initAdmin);

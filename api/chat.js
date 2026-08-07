@@ -101,9 +101,16 @@ module.exports = async function handler(req, res) {
       }
 
       if (req.method === "GET") {
-        const data = await dbRequest("GET", "messages", {
-          query: `conversation_id=eq.${encodeURIComponent(conversationId)}&select=*&order=created_at.asc`,
-        });
+        let query = `conversation_id=eq.${encodeURIComponent(conversationId)}&select=*&order=created_at.asc`;
+        const since = url.searchParams.get("since");
+        if (since) {
+          const sinceDate = new Date(since);
+          if (!Number.isNaN(sinceDate.getTime())) {
+            query += `&created_at=gt.${encodeURIComponent(sinceDate.toISOString())}`;
+          }
+        }
+
+        const data = await dbRequest("GET", "messages", { query });
         const messages = (Array.isArray(data) ? data : []).map(mapMessage);
 
         if (isAdmin) {

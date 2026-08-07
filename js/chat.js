@@ -3,8 +3,10 @@
  */
 
 let activeConversationId = null;
-let pollTimer = null;
+let customerChatPoller = null;
 let pendingOrderForChat = null;
+const customerMessageCache = new Map();
+let customerConvFingerprint = "";
 
 function initChat() {
   const openBtn = document.getElementById("btn-open-chat");
@@ -88,6 +90,10 @@ function openChatPanel(orderContext = null) {
   });
 }
 
+function clearConversationCache(conversationId) {
+  if (conversationId) customerMessageCache.delete(conversationId);
+}
+
 function closeChatPanel() {
   document.getElementById("chat-panel")?.classList.add("hidden");
   document.body.classList.remove("chat-open");
@@ -106,11 +112,14 @@ async function loadConversations() {
 
   try {
     const convs = await getConversations();
+    customerConvFingerprint = convListFingerprint(convs);
     if (convs.length === 0) {
       const conv = await createConversation("General");
       activeConversationId = conv.id;
       renderConversationList([conv]);
-      renderMessages([]);
+      renderMessageThread(document.getElementById("chat-messages"), [], {
+        forceScroll: true,
+      });
       return;
     }
 
@@ -118,7 +127,7 @@ async function loadConversations() {
     if (!activeConversationId || !convs.find((c) => c.id === activeConversationId)) {
       activeConversationId = convs[0].id;
     }
-    await loadMessages(activeConversationId);
+    await loadMessages(activeConversationId, { forceFull: true });
   } catch (err) {
     listEl.innerHTML = `<p class="chat-error">${escapeHtml(err.message)}</p>`;
   }
@@ -141,71 +150,103 @@ function renderConversationList(convs) {
   listEl.querySelectorAll(".chat-conv-item").forEach((btn) => {
     btn.addEventListener("click", async () => {
       activeConversationId = btn.dataset.convId;
+      clearConversationCache(activeConversationId);
       listEl.querySelectorAll(".chat-conv-item").forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
-      await loadMessages(activeConversationId);
+      await loadMessages(activeConversationId, { forceFull: true });
     });
   });
 }
 
-async function loadMessages(conversationId) {
+async function loadMessages(conversationId, options = {}) {
   const threadEl = document.getElementById("chat-messages");
   const headerEl = document.getElementById("chat-thread-header");
   if (!threadEl) return;
 
   try {
-    const messages = await getMessages(conversationId);
-    const convs = await getConversations();
-    const conv = convs.find((c) => c.id === conversationId);
-    if (headerEl && conv) {
-      headerEl.textContent = conv.orderId
-        ? `${conv.subject} · Order ${conv.orderId}`
-        : conv.subject;
+    if (!options.silent) {
+      const convs = await getConversations();
+      const conv = convs.find((c) => c.id === conversationId);
+      if (headerEl && conv) {
+        headerEl.textContent = conv.orderId
+          ? `${conv.subject} · Order ${conv.orderId}`
+          : conv.subject;
+      }
     }
-    renderMessages(messages);
+
+    const cached = customerMessageCache.get(conversationId) || [];
+    const since = options.forceFull ? null : getLastMessageTimestamp(cached);
+    const messages = await getMessages(conversationId, false, since);
+
+    if (since && messages.length) {
+      const merged = [...cached, ...messages];
+      customerMessageCache.set(conversationId, merged);
+      appendMessages(threadEl, messages);
+      return;
+    }
+
+    const fullMessages = since ? cached : messages;
+    customerMessageCache.set(conversationId, fullMessages);
+    renderMessageThread(threadEl, fullMessages, {
+      forceScroll: options.forceScroll !== false,
+    });
   } catch (err) {
-    threadEl.innerHTML = `<p class="chat-error">${escapeHtml(err.message)}</p>`;
+    if (!options.silent) {
+      threadEl.innerHTML = `<p class="chat-error">${escapeHtml(err.message)}</p>`;
+    }
   }
 }
 
-function renderMessages(messages) {
-  const threadEl = document.getElementById("chat-messages");
-  if (!threadEl) return;
-
-  if (!messages.length) {
-    threadEl.innerHTML = `
-      <div class="chat-empty-thread">
-        <img src="images/jhul-waving.png" alt="" class="sticker" style="width:70px;" />
-        <p>Say hi to Jhul! Ask about your order, payment, or rerolls.</p>
-      </div>`;
+async function refreshCustomerChatLive() {
+  if (!activeConversationId || document.getElementById("chat-panel")?.classList.contains("hidden")) {
     return;
   }
+  if (document.hidden) return;
 
-  threadEl.innerHTML = messages
-    .map(
-      (m) => `
-    <div class="chat-bubble chat-bubble-${m.senderType}">
-      <p>${escapeHtml(m.body)}</p>
-      <time>${escapeHtml(m.createdAtFormatted || "")}</time>
-    </div>`
-    )
-    .join("");
-
-  threadEl.scrollTop = threadEl.scrollHeight;
+  try {
+    const convs = await getConversations();
+    const fingerprint = convListFingerprint(convs);
+    if (fingerprint !== customerConvFingerprint) {
+      customerConvFingerprint = fingerprint;
+      renderConversationList(convs);
+    }
+    await loadMessages(activeConversationId, { silent: true, forceScroll: false });
+  } catch (_) {}
 }
 
 async function sendCustomerMessage() {
   const input = document.getElementById("chat-input");
+  const threadEl = document.getElementById("chat-messages");
   const text = input?.value.trim();
   if (!text || !activeConversationId) return;
 
+  const tempId = `pending-${Date.now()}`;
+  const optimistic = {
+    id: tempId,
+    senderType: "customer",
+    body: text,
+    createdAtFormatted: "Sending…",
+    pending: true,
+  };
+
+  appendMessages(threadEl, [optimistic], { forceScroll: true });
+  input.value = "";
   input.disabled = true;
+
   try {
-    await sendChatMessage(activeConversationId, text);
-    input.value = "";
-    await loadMessages(activeConversationId);
+    const sent = await sendChatMessage(activeConversationId, text);
+    replacePendingMessage(threadEl, tempId, sent);
+
+    const cached = customerMessageCache.get(activeConversationId) || [];
+    customerMessageCache.set(
+      activeConversationId,
+      [...cached.filter((m) => m.id !== tempId), sent]
+    );
+
     await loadConversations();
   } catch (err) {
+    removePendingMessage(threadEl, tempId);
+    input.value = text;
     alert(err.message);
   } finally {
     input.disabled = false;
@@ -219,8 +260,9 @@ async function startNewConversation() {
   try {
     const conv = await createConversation(subject.trim() || "General");
     activeConversationId = conv.id;
+    clearConversationCache(conv.id);
     await loadConversations();
-    await loadMessages(conv.id);
+    await loadMessages(conv.id, { forceFull: true });
   } catch (err) {
     alert(err.message);
   }
@@ -234,8 +276,9 @@ async function openOrderChat(order) {
       conv = await createConversation(`Order ${order.id}`, order.id);
     }
     activeConversationId = conv.id;
+    clearConversationCache(conv.id);
     await loadConversations();
-    await loadMessages(conv.id);
+    await loadMessages(conv.id, { forceFull: true });
 
     if (order.username) {
       const input = document.getElementById("chat-input");
@@ -257,19 +300,13 @@ function setPendingOrderForChat(order) {
 
 function startPolling() {
   stopPolling();
-  pollTimer = setInterval(async () => {
-    if (!activeConversationId || document.getElementById("chat-panel")?.classList.contains("hidden")) return;
-    try {
-      await loadMessages(activeConversationId);
-    } catch (_) {}
-  }, 5000);
+  customerChatPoller = createChatPoller(refreshCustomerChatLive, CHAT_POLL_CUSTOMER_MS);
+  customerChatPoller.start();
 }
 
 function stopPolling() {
-  if (pollTimer) {
-    clearInterval(pollTimer);
-    pollTimer = null;
-  }
+  customerChatPoller?.stop();
+  customerChatPoller = null;
 }
 
 function escapeHtml(str) {

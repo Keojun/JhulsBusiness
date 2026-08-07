@@ -121,7 +121,10 @@
       <div id="admin-view-messages" class="hidden">
         <div class="admin-chat-inbox">
           <div class="admin-chat-list-wrap">
-            <h3 class="admin-chat-list-title">Customer Chats</h3>
+            <h3 class="admin-chat-list-title">
+              Customer Chats
+              <span id="admin-chat-live" class="chat-live-badge hidden" aria-hidden="true">● Live</span>
+            </h3>
             <div id="admin-conv-list" class="admin-conv-list">
               <p class="chat-loading">Loading conversations…</p>
             </div>
@@ -130,7 +133,7 @@
             <div id="admin-chat-header" class="admin-chat-thread-header">
               <p>Select a conversation to reply</p>
             </div>
-            <div id="admin-chat-messages" class="admin-chat-messages"></div>
+            <div id="admin-chat-messages" class="admin-chat-messages" data-empty-html="<p class=&quot;chat-empty&quot;>No messages yet.</p>"></div>
             <form id="admin-chat-form" class="admin-chat-form hidden">
               <input type="text" id="admin-chat-input" placeholder="Reply to customer…" maxlength="2000" autocomplete="off" required />
               <button type="submit" class="btn btn-green">Send</button>
@@ -146,6 +149,7 @@
   <div id="admin-toast" class="admin-toast hidden" role="status"></div>
 
   <script src="js/storage.js"></script>
+  <script src="js/chat-live.js"></script>
   <script src="js/admin.js"></script>
 </body>
 </html>
