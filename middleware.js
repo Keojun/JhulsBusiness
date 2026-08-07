@@ -1,9 +1,26 @@
-import { NextResponse } from "@vercel/edge";
+/**
+ * Vercel Edge Middleware — login gate for protected pages.
+ * Uses standard Web APIs only (no @vercel/edge / Next.js imports).
+ */
 
 const SESSION_COOKIE = "rbxdisc_session";
 
+export const config = {
+  matcher: ["/", "/index", "/index.html", "/gakuran", "/gakuran.html"],
+};
+
 function getSecret() {
   return process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD || "";
+}
+
+function getCookie(request, name) {
+  const header = request.headers.get("cookie") || "";
+  const parts = header.split(";");
+  for (const part of parts) {
+    const [key, ...rest] = part.trim().split("=");
+    if (key === name) return decodeURIComponent(rest.join("="));
+  }
+  return null;
 }
 
 function bytesToHex(bytes) {
@@ -49,19 +66,19 @@ async function verifySessionToken(signedValue, secret) {
   return timingSafeEqual(sig, expected);
 }
 
-export const config = {
-  matcher: ["/", "/index", "/index.html", "/gakuran", "/gakuran.html"],
-};
-
 export default async function middleware(request) {
   const secret = getSecret();
-  const cookie = request.cookies.get(SESSION_COOKIE)?.value;
+  const cookie = getCookie(request, SESSION_COOKIE);
 
   if (cookie && secret && (await verifySessionToken(cookie, secret))) {
-    return NextResponse.next();
+    return new Response(null, {
+      headers: { "x-middleware-next": "1" },
+    });
   }
 
-  const loginUrl = new URL("/login", request.url);
-  loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
-  return NextResponse.redirect(loginUrl);
+  const url = new URL(request.url);
+  const loginUrl = new URL("/login", url.origin);
+  loginUrl.searchParams.set("redirect", url.pathname);
+
+  return Response.redirect(loginUrl.toString(), 307);
 }
