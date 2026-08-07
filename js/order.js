@@ -351,10 +351,7 @@ function initOrderForm() {
       rerollAmount,
       pricePHP: calcPrice(rerollAmount),
       paymentMethod: null,
-      date: new Date().toLocaleString("en-PH", {
-        dateStyle: "medium",
-        timeStyle: "short",
-      }),
+      date: formatPhilippinesDateTime(new Date()),
       status: "pending",
       createdAt: new Date().toISOString(),
     };

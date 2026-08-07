@@ -7,7 +7,7 @@
   <link rel="icon" href="images/jhul-logo.png" type="image/png" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
-<body>
+<body class="page-admin">
 
   <header class="site-header">
     <div class="header-inner">
@@ -19,68 +19,100 @@
         </span>
       </a>
       <nav class="nav-links">
+        <span class="admin-clock" id="admin-clock" title="Philippines Time (UTC+8)">🕐 Loading…</span>
         <a href="index.html">← Back to Site</a>
+        <button type="button" id="btn-logout" class="btn btn-outline btn-sm hidden">Logout</button>
       </nav>
     </div>
   </header>
 
-  <div class="container admin-panel" style="padding-top:2rem;">
+  <div class="container admin-panel">
 
     <!-- Login -->
-    <div id="login-section">
-      <div class="card" style="max-width:400px;margin:2rem auto;">
-        <h2 style="margin-bottom:0.5rem;">Owner Login</h2>
-        <p id="db-status" style="font-size:0.85rem;margin-bottom:0.75rem;color:var(--dark-soft);">Checking database...</p>
-        <p style="color:var(--dark-soft);margin-bottom:1.25rem;font-size:0.95rem;">Use the <strong>ADMIN_PASSWORD</strong> you set in Vercel Environment Variables.</p>
+    <div id="login-section" class="admin-login-wrap">
+      <div class="card admin-login-card">
+        <img src="images/jhul-happy.png" alt="" class="sticker admin-login-sticker" aria-hidden="true" />
+        <div class="admin-login-header">
+          <img src="images/jhul-logo.png" alt="" class="admin-login-logo" />
+          <h2>Owner Login</h2>
+          <p class="admin-login-sub">Manage Gakuran orders & review codes</p>
+        </div>
+        <div id="db-status" class="admin-db-pill">Checking database…</div>
+        <p class="admin-login-hint">Use the <strong>ADMIN_PASSWORD</strong> from your Vercel Environment Variables.</p>
         <form id="admin-login">
           <div class="form-group">
             <label for="admin-password">Password</label>
-            <input type="password" id="admin-password" placeholder="Enter admin password" required />
+            <input type="password" id="admin-password" placeholder="Enter admin password" required autocomplete="current-password" />
           </div>
-          <button type="submit" class="btn btn-primary" style="width:100%;">Login</button>
+          <button type="submit" class="btn btn-primary admin-login-btn">Login to Dashboard</button>
         </form>
       </div>
     </div>
 
     <!-- Dashboard -->
     <div id="admin-dashboard" class="hidden">
-      <h1 class="section-title">Order Management</h1>
-      <p class="section-subtitle">Complete orders after rerolls are delivered, then send the review code to the customer.</p>
-
-      <div class="notice notice-info mb-2">
-        <span class="notice-icon">ℹ️</span>
+      <div class="admin-dashboard-header">
         <div>
-          <strong>How it works:</strong> When a customer places an order, it appears here. After you finish their rerolls, click "Complete & Generate Code" and send the code to them on Messenger. They use it on the Gakuran page to leave a verified review.
+          <h1 class="section-title admin-title">Order Dashboard</h1>
+          <p class="section-subtitle admin-subtitle">Complete orders after rerolls are delivered, then send the review code on Messenger.</p>
+        </div>
+        <button type="button" id="btn-refresh" class="btn btn-outline admin-refresh-btn" title="Refresh orders">
+          ↻ Refresh
+        </button>
+      </div>
+
+      <div class="admin-stats" id="admin-stats">
+        <div class="admin-stat-card stat-pending">
+          <span class="admin-stat-label">Pending</span>
+          <span class="admin-stat-value" id="stat-pending">0</span>
+        </div>
+        <div class="admin-stat-card stat-completed">
+          <span class="admin-stat-label">Completed</span>
+          <span class="admin-stat-value" id="stat-completed">0</span>
+        </div>
+        <div class="admin-stat-card stat-total">
+          <span class="admin-stat-label">Total Orders</span>
+          <span class="admin-stat-value" id="stat-total">0</span>
+        </div>
+        <div class="admin-stat-card stat-revenue">
+          <span class="admin-stat-label">Total Revenue</span>
+          <span class="admin-stat-value" id="stat-revenue">₱0</span>
         </div>
       </div>
 
-      <div class="card" style="overflow-x:auto;">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Order ID</th>
-              <th>Username</th>
-              <th>Rerolls</th>
-              <th>Price</th>
-              <th>Payment</th>
-              <th>Date</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="orders-tbody"></tbody>
-        </table>
+      <div class="admin-toolbar">
+        <div class="admin-filter-tabs" role="tablist">
+          <button type="button" class="admin-filter-tab active" data-filter="all">All</button>
+          <button type="button" class="admin-filter-tab" data-filter="pending">Pending</button>
+          <button type="button" class="admin-filter-tab" data-filter="completed">Completed</button>
+        </div>
+        <div class="admin-search-wrap">
+          <input type="search" id="admin-search" class="admin-search" placeholder="Search username or order ID…" autocomplete="off" />
+        </div>
       </div>
 
-      <div class="notice notice-info mt-2">
+      <div id="orders-container">
+        <div class="admin-loading" id="orders-loading">Loading orders…</div>
+        <div class="admin-orders-grid hidden" id="orders-grid"></div>
+        <div class="admin-empty hidden" id="orders-empty">
+          <img src="images/jhul-waving.png" alt="" class="sticker admin-empty-sticker" aria-hidden="true" />
+          <h3>No orders yet</h3>
+          <p>When a customer places an order on the Gakuran shop, it will appear here.</p>
+          <a href="gakuran.html" class="btn btn-primary">Open Gakuran Shop</a>
+        </div>
+      </div>
+
+      <div class="notice notice-info admin-footer-note">
         <span class="notice-icon">ℹ️</span>
         <div>
-          <strong>Database connected:</strong> When Supabase is configured in Vercel environment variables, orders from all customers appear here automatically. Without it, orders fall back to browser localStorage (same device only).
+          <strong>Times shown in Philippines (Manila, UTC+8).</strong> Orders sync from Supabase when configured; otherwise they only appear from this browser's local storage.
         </div>
       </div>
     </div>
 
   </div>
+
+  <div id="admin-toast" class="admin-toast hidden" role="status"></div>
 
   <script src="js/storage.js"></script>
   <script src="js/admin.js"></script>

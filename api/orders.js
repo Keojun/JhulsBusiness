@@ -5,6 +5,7 @@ const {
   parseBody,
   sendJson,
 } = require("../lib/db");
+const { formatPhilippinesDateTime } = require("../lib/datetime");
 
 module.exports = async function handler(req, res) {
   try {
@@ -37,10 +38,7 @@ module.exports = async function handler(req, res) {
         paymentMethod: o.payment_method || null,
         status: o.status,
         reviewCode: o.review_code,
-        date: new Date(o.created_at).toLocaleString("en-PH", {
-          dateStyle: "medium",
-          timeStyle: "short",
-        }),
+        date: formatPhilippinesDateTime(o.created_at),
         createdAt: o.created_at,
       }));
 
@@ -80,10 +78,7 @@ module.exports = async function handler(req, res) {
         paymentMethod: data.payment_method || null,
         status: data.status,
         savedToDb: true,
-        date: new Date(data.created_at).toLocaleString("en-PH", {
-          dateStyle: "medium",
-          timeStyle: "short",
-        }),
+        date: formatPhilippinesDateTime(data.created_at),
         createdAt: data.created_at,
       });
     }
