@@ -10,6 +10,20 @@ const customerMessageCache = new Map();
 let customerConvFingerprint = "";
 let lastCustomerTotalUnread = null;
 
+function resetCustomerChatState() {
+  closeChatPanel();
+  activeConversationId = null;
+  pendingOrderForChat = null;
+  customerMessageCache.clear();
+  customerConvFingerprint = "";
+  lastCustomerTotalUnread = null;
+  hideChatFab();
+  stopCustomerNotifyPoll();
+  stopPolling();
+  updateCustomerChatBadges(0);
+  setDocumentTitleBadge(0);
+}
+
 function initChat() {
   const openBtn = document.getElementById("btn-open-chat");
   const headerChatBtn = document.getElementById("btn-header-chat");
@@ -36,13 +50,12 @@ function initChat() {
       showChatFab(false);
       startCustomerNotifyPoll();
     } else {
-      closeChatPanel();
-      activeConversationId = null;
-      hideChatFab();
-      stopCustomerNotifyPoll();
-      updateCustomerChatBadges(0);
-      setDocumentTitleBadge(0);
+      resetCustomerChatState();
     }
+  });
+
+  document.addEventListener("rbxdisc:logout", () => {
+    resetCustomerChatState();
   });
 
   document.getElementById("btn-message-jhul-order")?.addEventListener("click", () => {

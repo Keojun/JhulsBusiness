@@ -9,6 +9,7 @@ const {
 } = require("../lib/db");
 const { getCustomerFromRequest } = require("../lib/auth");
 const { formatPhilippinesDateTime } = require("../lib/datetime");
+const { assertOrderOwnedByCustomer } = require("../lib/order-access");
 
 async function enrichConversations(conversations, viewerRole = "admin") {
   if (!conversations.length) return [];
@@ -23,17 +24,20 @@ async function enrichConversations(conversations, viewerRole = "admin") {
 
   const convIds = conversations.map((c) => c.id);
   const unreadSender = viewerRole === "admin" ? "customer" : "admin";
-  const unreadRows = await dbRequest("GET", "messages", {
-    query: `read_at=is.null&sender_type=eq.${unreadSender}&conversation_id=in.(${convIds.join(",")})&select=conversation_id`,
-  });
   const unreadMap = {};
-  for (const row of Array.isArray(unreadRows) ? unreadRows : []) {
-    unreadMap[row.conversation_id] = (unreadMap[row.conversation_id] || 0) + 1;
+
+  if (convIds.length) {
+    const unreadRows = await dbRequest("GET", "messages", {
+      query: `read_at=is.null&sender_type=eq.${unreadSender}&conversation_id=in.(${convIds.join(",")})&select=conversation_id`,
+    });
+    for (const row of Array.isArray(unreadRows) ? unreadRows : []) {
+      unreadMap[row.conversation_id] = (unreadMap[row.conversation_id] || 0) + 1;
+    }
   }
 
   return conversations.map((c) => {
     const customer = customerMap[c.customer_id] || {};
-    return {
+    const base = {
       id: c.id,
       customerId: c.customer_id,
       orderId: c.order_id,
@@ -41,12 +45,20 @@ async function enrichConversations(conversations, viewerRole = "admin") {
       status: c.status,
       createdAt: c.created_at,
       updatedAt: c.updated_at,
-      customerEmail: customer.email || null,
-      customerRoblox: customer.roblox_username || null,
-      customerName: customer.display_name || customer.roblox_username || "Customer",
       updatedAtFormatted: formatPhilippinesDateTime(c.updated_at),
       unreadCount: unreadMap[c.id] || 0,
     };
+
+    if (viewerRole === "admin") {
+      return {
+        ...base,
+        customerEmail: customer.email || null,
+        customerRoblox: customer.roblox_username || null,
+        customerName: customer.display_name || customer.roblox_username || "Customer",
+      };
+    }
+
+    return base;
   });
 }
 
@@ -106,6 +118,10 @@ module.exports = async function handler(req, res) {
         return sendJson(res, 400, { error: "conversationId is required" });
       }
 
+      if (!isAdmin && !customer) {
+        return sendJson(res, 401, { error: "Login required" });
+      }
+
       const conversation = await getConversation(conversationId);
       if (!canAccessConversation(conversation, customer, isAdmin)) {
         return sendJson(res, 403, { error: "Access denied" });
@@ -158,8 +174,15 @@ module.exports = async function handler(req, res) {
           return sendJson(res, 400, { error: "Message too long (max 2000 characters)" });
         }
 
+        if (isAdmin) {
+          if (!checkAdmin(req, body)) {
+            return sendJson(res, 401, { error: "Unauthorized" });
+          }
+        } else if (!customer) {
+          return sendJson(res, 401, { error: "Login required" });
+        }
+
         const senderType = isAdmin ? "admin" : "customer";
-        if (!isAdmin && !customer) return sendJson(res, 401, { error: "Login required" });
 
         const rows = await dbRequest("POST", "messages", {
           body: {
@@ -185,6 +208,9 @@ module.exports = async function handler(req, res) {
 
     if (req.method === "GET") {
       if (isAdmin) {
+        if (!checkAdmin(req, body)) {
+          return sendJson(res, 401, { error: "Unauthorized" });
+        }
         const data = await dbRequest("GET", "conversations", {
           query: "select=*&order=updated_at.desc",
         });
@@ -204,6 +230,13 @@ module.exports = async function handler(req, res) {
 
       const subject = String(body.subject || "General").trim() || "General";
       const orderId = body.orderId || body.order_id || null;
+
+      if (orderId) {
+        const ownership = await assertOrderOwnedByCustomer(orderId, customer);
+        if (!ownership.ok) {
+          return sendJson(res, ownership.status, { error: ownership.error });
+        }
+      }
 
       const rows = await dbRequest("POST", "conversations", {
         body: {
