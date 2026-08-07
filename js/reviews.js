@@ -103,6 +103,15 @@ function initReviewForm() {
 
   let activeCode = null;
 
+  document.getElementById("btn-go-to-review")?.addEventListener("click", () => {
+    if (typeof closeModal === "function") closeModal("modal-review-required");
+    const section = document.getElementById("leave-review");
+    section?.classList.remove("hidden");
+    document.getElementById("nav-leave-review")?.classList.remove("hidden");
+    section?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById("review-code")?.focus();
+  });
+
   unlockForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const code = document.getElementById("review-code").value.trim().toUpperCase();
@@ -170,6 +179,35 @@ function initReviewForm() {
 
   initStarRating();
 }
+
+async function showReviewRequiredModal(order) {
+  if (!order?.reviewCode) return;
+
+  const key = `rbxdisc_review_modal_${order.id}`;
+  if (sessionStorage.getItem(key) === "1") return;
+  sessionStorage.setItem(key, "1");
+
+  const codeEl = document.getElementById("modal-review-code-display");
+  const codeInput = document.getElementById("review-code");
+  if (codeEl) codeEl.textContent = order.reviewCode;
+  if (codeInput) codeInput.value = order.reviewCode;
+
+  const section = document.getElementById("leave-review");
+  const navLink = document.getElementById("nav-leave-review");
+  section?.classList.remove("hidden");
+  navLink?.classList.remove("hidden");
+
+  try {
+    const c = await getCurrentCustomer();
+    if (c) sessionStorage.setItem(`rbxdisc_review_unlocked_${c.id}`, "1");
+  } catch (_) {}
+
+  if (typeof openModal === "function") {
+    openModal("modal-review-required");
+  }
+}
+
+window.showReviewRequiredModal = showReviewRequiredModal;
 
 document.addEventListener("DOMContentLoaded", () => {
   loadFacebookReviews("fb-reviews-grid");

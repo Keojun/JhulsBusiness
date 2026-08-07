@@ -99,8 +99,33 @@ function initModals() {
   }
 
   if (confirmBtn) {
-    confirmBtn.addEventListener("click", showReviewSection);
+    confirmBtn.addEventListener("click", () => {
+      closeModal("modal-instructions");
+      document.getElementById("nav-leave-review")?.classList.remove("hidden");
+      if (typeof openChatPanel === "function") {
+        openChatPanel(pendingOrderForChatRef || null);
+      }
+    });
   }
+
+  document.getElementById("btn-chat-required-open")?.addEventListener("click", () => {
+    closeModal("modal-chat-required");
+    if (typeof openChatPanel === "function" && pendingOrderForChatRef) {
+      openChatPanel(pendingOrderForChatRef);
+    } else if (typeof openChatPanel === "function") {
+      openChatPanel(null);
+    }
+  });
+
+  document.getElementById("btn-chat-required-instructions")?.addEventListener("click", () => {
+    closeModal("modal-chat-required");
+    openModal("modal-instructions");
+  });
+
+  let pendingOrderForChatRef = null;
+  window.setOrderChatRef = (order) => {
+    pendingOrderForChatRef = order;
+  };
 
   const instructionsModal = document.getElementById("modal-instructions");
   if (instructionsModal) {
@@ -228,7 +253,7 @@ function drawInvoice(order) {
     ["Total Price", formatPrice(order.pricePHP)],
     ["Payment", order.paymentMethod === "paymaya" ? "Maya (PayMaya)" : "GCash"],
     ["Date", order.date],
-    ["Status", "Pending Verification"],
+    ["Status", orderStatusLabel(order.status) || "Awaiting Payment"],
   ];
 
   let y = 175;
@@ -404,30 +429,30 @@ function initOrderForm() {
   const paymentModal = initPaymentModal(async (paymentMethod) => {
     if (!pendingOrder) return;
 
-    pendingOrder.paymentMethod = paymentMethod;
-    currentOrder = await addOrder(pendingOrder);
-    drawInvoice(currentOrder);
+    try {
+      pendingOrder.paymentMethod = paymentMethod;
+      currentOrder = await confirmPaymentApi(pendingOrder.id, paymentMethod);
+      drawInvoice(currentOrder);
 
-    const statusEl = document.getElementById("order-save-status");
-    if (statusEl) {
-      if (currentOrder.savedToDb) {
+      const statusEl = document.getElementById("order-save-status");
+      if (statusEl) {
         statusEl.className = "notice notice-info";
         statusEl.innerHTML =
-          '<span class="notice-icon">✅</span><div><strong>Order saved!</strong> Jhul can see it in admin.</div>';
-      } else {
-        statusEl.className = "notice notice-warning";
-        statusEl.innerHTML = `<span class="notice-icon">⚠️</span><div><strong>Order saved locally.</strong> ${currentOrder.dbError || ""} Still send invoice to Jhul on Facebook.</div>`;
+          '<span class="notice-icon">✅</span><div><strong>Payment recorded!</strong> Jhul will verify your payment. Use the chat button to message him about your order.</div>';
+        statusEl.classList.remove("hidden");
       }
-      statusEl.classList.remove("hidden");
-    }
 
-    closeModal("modal-payment");
-    setInvoiceDownloadStatus("");
-    openModal("modal-invoice");
-    pendingOrder = null;
+      closeModal("modal-payment");
+      setInvoiceDownloadStatus("");
+      openModal("modal-invoice");
 
-    if (typeof setPendingOrderForChat === "function") {
-      setPendingOrderForChat(currentOrder);
+      if (typeof setPendingOrderForChat === "function") {
+        setPendingOrderForChat(currentOrder);
+      }
+    } catch (err) {
+      alert(err.message || "Could not confirm payment. Please try again.");
+    } finally {
+      pendingOrder = null;
     }
   });
 
@@ -447,18 +472,51 @@ function initOrderForm() {
       return;
     }
 
-    pendingOrder = {
+    const orderDraft = {
       id: generateOrderId(),
       username,
       rerollAmount,
       pricePHP: calcPrice(rerollAmount),
       paymentMethod: null,
       date: formatPhilippinesDateTime(new Date()),
-      status: "pending",
+      status: "awaiting_payment",
       createdAt: new Date().toISOString(),
     };
 
-    paymentModal.show(pendingOrder);
+    try {
+      const saved = await addOrder(orderDraft);
+      if (!saved.savedToDb) {
+        alert(saved.dbError || "Could not save order online. Check your connection and log in.");
+        return;
+      }
+      pendingOrder = saved;
+      paymentModal.show(pendingOrder);
+    } catch (err) {
+      if (err.status === 409) {
+        const resume = window.confirm(
+          `${err.message}\n\nOpen your existing order instead?`
+        );
+        if (resume && err.existingOrderId) {
+          const orders = await getCustomerOrders();
+          const existing = orders.find((o) => o.id === err.existingOrderId);
+          if (existing) {
+            pendingOrder = existing;
+            if (existing.status === "awaiting_payment") {
+              paymentModal.show(existing);
+            } else {
+              currentOrder = existing;
+              drawInvoice(existing);
+              openModal("modal-invoice");
+              if (typeof setPendingOrderForChat === "function") {
+                setPendingOrderForChat(existing);
+              }
+            }
+          }
+        }
+        return;
+      }
+      alert(err.message || "Could not create order. Please try again.");
+    }
   }
 
   form.addEventListener("submit", submitOrder);
@@ -494,7 +552,7 @@ function initOrderForm() {
 
         setInvoiceDownloadStatus("");
         closeModal("modal-invoice");
-        openModal("modal-instructions");
+        openModal("modal-chat-required");
       } finally {
         downloadBtn.disabled = false;
       }
@@ -509,4 +567,51 @@ document.addEventListener("DOMContentLoaded", () => {
   initModals();
   initRerollStepper();
   initOrderForm();
+  initOrderStatusWatcher();
 });
+
+function initOrderStatusWatcher() {
+  let pollTimer = null;
+
+  async function checkOrders() {
+    const customer = await getCurrentCustomer();
+    if (!customer) return;
+
+    let orders;
+    try {
+      orders = await getCustomerOrders();
+    } catch (_) {
+      return;
+    }
+
+    const processing = orders.find((o) => o.status === "processing");
+    if (processing && typeof showProcessingPrompt === "function") {
+      showProcessingPrompt(processing);
+    }
+
+    const completed = orders.find(
+      (o) => o.status === "completed" && o.reviewCode
+    );
+    if (completed && typeof showReviewRequiredModal === "function") {
+      showReviewRequiredModal(completed);
+    }
+  }
+
+  document.addEventListener("rbxdisc:auth", (e) => {
+    if (e.detail.customer) {
+      checkOrders();
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(checkOrders, 45000);
+    } else if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  });
+
+  getCurrentCustomer().then((c) => {
+    if (c) {
+      checkOrders();
+      pollTimer = setInterval(checkOrders, 45000);
+    }
+  });
+}
