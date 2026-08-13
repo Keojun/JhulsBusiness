@@ -323,6 +323,27 @@ async function getFacebookReviews() {
   return [];
 }
 
+function clearReviewUnlockForCustomer(customerId) {
+  if (!customerId) return;
+  sessionStorage.removeItem(`rbxdisc_review_unlocked_${customerId}`);
+}
+
+/** Wipe order/review modal flags so a new login/signup never inherits another session's UI state. */
+function clearCustomerFlowSessionState() {
+  const keysToRemove = [];
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const key = sessionStorage.key(i);
+    if (
+      key &&
+      (key.startsWith("rbxdisc_review_") ||
+        key.startsWith("rbxdisc_processing_prompt_"))
+    ) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach((k) => sessionStorage.removeItem(k));
+}
+
 async function customerLogout() {
   const previousCustomerId = customerCache?.id;
   try {
@@ -330,13 +351,8 @@ async function customerLogout() {
   } catch (_) {}
   customerCache = null;
   clearReviewUnlockForCustomer(previousCustomerId);
-  sessionStorage.removeItem("rbxdisc_review_unlocked");
+  clearCustomerFlowSessionState();
   document.dispatchEvent(new CustomEvent("rbxdisc:logout"));
-}
-
-function clearReviewUnlockForCustomer(customerId) {
-  if (!customerId) return;
-  sessionStorage.removeItem(`rbxdisc_review_unlocked_${customerId}`);
 }
 
 async function customerLogin({ email, password }) {
@@ -346,7 +362,7 @@ async function customerLogin({ email, password }) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Login failed");
-  sessionStorage.removeItem("rbxdisc_review_unlocked");
+  clearCustomerFlowSessionState();
   customerCache = data.customer;
   return data.customer;
 }
@@ -358,7 +374,7 @@ async function customerSignup({ email, password, robloxUsername, displayName }) 
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "Signup failed");
-  sessionStorage.removeItem("rbxdisc_review_unlocked");
+  clearCustomerFlowSessionState();
   customerCache = data.customer;
   return data.customer;
 }

@@ -180,10 +180,17 @@ function initReviewForm() {
   initStarRating();
 }
 
-async function showReviewRequiredModal(order) {
-  if (!order?.reviewCode) return;
+async function showReviewRequiredModal(order, customerId) {
+  if (!order?.reviewCode || order.status !== "completed") return;
 
-  const key = `rbxdisc_review_modal_${order.id}`;
+  const customer = customerId
+    ? { id: customerId }
+    : await getCurrentCustomer();
+  if (!customer?.id) return;
+
+  if (order.customerId && order.customerId !== customer.id) return;
+
+  const key = `rbxdisc_review_modal_${customer.id}_${order.id}`;
   if (sessionStorage.getItem(key) === "1") return;
   sessionStorage.setItem(key, "1");
 
@@ -196,11 +203,7 @@ async function showReviewRequiredModal(order) {
   const navLink = document.getElementById("nav-leave-review");
   section?.classList.remove("hidden");
   navLink?.classList.remove("hidden");
-
-  try {
-    const c = await getCurrentCustomer();
-    if (c) sessionStorage.setItem(`rbxdisc_review_unlocked_${c.id}`, "1");
-  } catch (_) {}
+  sessionStorage.setItem(`rbxdisc_review_unlocked_${customer.id}`, "1");
 
   if (typeof openModal === "function") {
     openModal("modal-review-required");

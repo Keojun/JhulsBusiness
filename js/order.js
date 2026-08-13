@@ -75,14 +75,51 @@ function initModals() {
   }
 
   getCurrentCustomer().then((customer) => {
-    const key = reviewUnlockKey(customer?.id);
-    if (!key || sessionStorage.getItem(key) !== "1") return;
+    if (customer) refreshReviewSectionVisibility();
+  });
+
+  document.addEventListener("rbxdisc:auth", (e) => {
+    if (e.detail.customer) refreshReviewSectionVisibility();
+    else hideReviewUi();
+  });
+
+  document.addEventListener("rbxdisc:logout", hideReviewUi);
+
+  async function refreshReviewSectionVisibility() {
+    const customer = await getCurrentCustomer();
+    if (!customer) {
+      hideReviewUi();
+      return;
+    }
+
+    let orders = [];
+    try {
+      orders = await getCustomerOrders();
+    } catch (_) {}
+
+    const pendingReview =
+      Array.isArray(orders) &&
+      orders.some((o) => o.status === "completed" && o.reviewCode);
+
+    const key = reviewUnlockKey(customer.id);
+    const unlocked = key && sessionStorage.getItem(key) === "1";
+    const show = pendingReview || unlocked;
 
     const reviewSection = document.getElementById("leave-review");
     const navLink = document.getElementById("nav-leave-review");
-    if (reviewSection) reviewSection.classList.remove("hidden");
-    if (navLink) navLink.classList.remove("hidden");
-  });
+    if (show) {
+      reviewSection?.classList.remove("hidden");
+      navLink?.classList.remove("hidden");
+    } else {
+      hideReviewUi();
+    }
+  }
+
+  function hideReviewUi() {
+    document.getElementById("leave-review")?.classList.add("hidden");
+    document.getElementById("nav-leave-review")?.classList.add("hidden");
+    closeModal("modal-review-required");
+  }
 
   if (continueBtn && step1 && step2) {
     continueBtn.addEventListener("click", () => {
@@ -101,7 +138,6 @@ function initModals() {
   if (confirmBtn) {
     confirmBtn.addEventListener("click", () => {
       closeModal("modal-instructions");
-      document.getElementById("nav-leave-review")?.classList.remove("hidden");
       if (typeof openChatPanel === "function") {
         openChatPanel(pendingOrderForChatRef || null);
       }
@@ -573,6 +609,12 @@ document.addEventListener("DOMContentLoaded", () => {
 function initOrderStatusWatcher() {
   let pollTimer = null;
 
+  function orderNeedsReview(order, customerId) {
+    if (!order || order.status !== "completed" || !order.reviewCode) return false;
+    if (order.customerId && customerId && order.customerId !== customerId) return false;
+    return true;
+  }
+
   async function checkOrders() {
     const customer = await getCurrentCustomer();
     if (!customer) return;
@@ -584,21 +626,22 @@ function initOrderStatusWatcher() {
       return;
     }
 
+    if (!Array.isArray(orders) || orders.length === 0) return;
+
     const processing = orders.find((o) => o.status === "processing");
     if (processing && typeof showProcessingPrompt === "function") {
       showProcessingPrompt(processing);
     }
 
-    const completed = orders.find(
-      (o) => o.status === "completed" && o.reviewCode
-    );
+    const completed = orders.find((o) => orderNeedsReview(o, customer.id));
     if (completed && typeof showReviewRequiredModal === "function") {
-      showReviewRequiredModal(completed);
+      showReviewRequiredModal(completed, customer.id);
     }
   }
 
   document.addEventListener("rbxdisc:auth", (e) => {
     if (e.detail.customer) {
+      closeModal("modal-review-required");
       checkOrders();
       if (pollTimer) clearInterval(pollTimer);
       pollTimer = setInterval(checkOrders, 45000);
