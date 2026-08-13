@@ -461,6 +461,87 @@ function initOrderForm() {
 
   let currentOrder = null;
   let pendingOrder = null;
+  let activeBlockingOrder = null;
+  let submittingOrder = false;
+
+  function setOrderFormLocked(locked) {
+    form.querySelectorAll("input, button").forEach((el) => {
+      if (el.id === "btn-resume-active-order" || el.id === "btn-chat-active-order") return;
+      el.disabled = locked;
+    });
+    if (orderImgBtn) orderImgBtn.disabled = locked;
+  }
+
+  async function resumeActiveOrder(order) {
+    if (!order) return;
+    activeBlockingOrder = order;
+    if (order.status === "awaiting_payment") {
+      pendingOrder = order;
+      paymentModal.show(order);
+      return;
+    }
+    currentOrder = order;
+    drawInvoice(order);
+    openModal("modal-invoice");
+    if (typeof setPendingOrderForChat === "function") {
+      setPendingOrderForChat(order);
+    }
+  }
+
+  async function refreshActiveOrderNotice() {
+    const notice = document.getElementById("order-active-notice");
+    const noticeText = document.getElementById("order-active-notice-text");
+    if (!notice) return;
+
+    const customer = await getCurrentCustomer();
+    if (!customer) {
+      activeBlockingOrder = null;
+      notice.classList.add("hidden");
+      setOrderFormLocked(false);
+      return;
+    }
+
+    let orders = [];
+    try {
+      orders = await getCustomerOrders();
+    } catch (_) {
+      return;
+    }
+
+    const active = findActiveCustomerOrder(orders);
+    activeBlockingOrder = active;
+
+    if (!active) {
+      notice.classList.add("hidden");
+      setOrderFormLocked(false);
+      return;
+    }
+
+    const label = orderStatusLabel(active.status);
+    notice.classList.remove("hidden");
+    if (noticeText) {
+      noticeText.textContent = `Order ${active.id} — ${label}. Complete or wait for Jhul to finish before placing another.`;
+    }
+    setOrderFormLocked(true);
+  }
+
+  document.getElementById("btn-resume-active-order")?.addEventListener("click", () => {
+    if (activeBlockingOrder) resumeActiveOrder(activeBlockingOrder);
+  });
+
+  document.getElementById("btn-chat-active-order")?.addEventListener("click", () => {
+    if (activeBlockingOrder && typeof openChatPanel === "function") {
+      openChatPanel(activeBlockingOrder);
+    }
+  });
+
+  document.addEventListener("rbxdisc:auth", () => {
+    refreshActiveOrderNotice();
+  });
+
+  refreshActiveOrderNotice();
+
+  window.refreshActiveOrderNotice = refreshActiveOrderNotice;
 
   const paymentModal = initPaymentModal(async (paymentMethod) => {
     if (!pendingOrder) return;
@@ -485,6 +566,7 @@ function initOrderForm() {
       if (typeof setPendingOrderForChat === "function") {
         setPendingOrderForChat(currentOrder);
       }
+      await refreshActiveOrderNotice();
     } catch (err) {
       alert(err.message || "Could not confirm payment. Please try again.");
     } finally {
@@ -495,9 +577,18 @@ function initOrderForm() {
   async function submitOrder(e) {
     e.preventDefault();
 
+    if (submittingOrder) return;
+
     if (typeof requireLoginForAction === "function") {
       const customer = await requireLoginForAction("/gakuran");
       if (!customer) return;
+    }
+
+    if (activeBlockingOrder) {
+      alert(
+        `You already have an order in progress (${activeBlockingOrder.id} — ${orderStatusLabel(activeBlockingOrder.status)}). Use "Resume order" or message Jhul before placing another.`
+      );
+      return;
     }
 
     const username = document.getElementById("username").value.trim();
@@ -513,6 +604,20 @@ function initOrderForm() {
       return;
     }
 
+    // Client-side pre-check before generating a new order id.
+    try {
+      const orders = await getCustomerOrders();
+      const active = findActiveCustomerOrder(orders);
+      if (active) {
+        activeBlockingOrder = active;
+        await refreshActiveOrderNotice();
+        alert(
+          `You already have an order in progress (${active.id} — ${orderStatusLabel(active.status)}). Finish it before placing another.`
+        );
+        return;
+      }
+    } catch (_) {}
+
     const orderDraft = {
       id: generateOrderId(),
       username,
@@ -524,6 +629,9 @@ function initOrderForm() {
       createdAt: new Date().toISOString(),
     };
 
+    submittingOrder = true;
+    setOrderFormLocked(true);
+
     try {
       const saved = await addOrder(orderDraft);
       if (!saved.savedToDb) {
@@ -532,31 +640,23 @@ function initOrderForm() {
       }
       pendingOrder = saved;
       paymentModal.show(pendingOrder);
+      await refreshActiveOrderNotice();
     } catch (err) {
       if (err.status === 409) {
-        const resume = window.confirm(
-          `${err.message}\n\nOpen your existing order instead?`
-        );
+        await refreshActiveOrderNotice();
+        const resume = window.confirm(`${err.message}\n\nOpen your existing order instead?`);
         if (resume && err.existingOrderId) {
           const orders = await getCustomerOrders();
           const existing = orders.find((o) => o.id === err.existingOrderId);
-          if (existing) {
-            pendingOrder = existing;
-            if (existing.status === "awaiting_payment") {
-              paymentModal.show(existing);
-            } else {
-              currentOrder = existing;
-              drawInvoice(existing);
-              openModal("modal-invoice");
-              if (typeof setPendingOrderForChat === "function") {
-                setPendingOrderForChat(existing);
-              }
-            }
-          }
+          if (existing) await resumeActiveOrder(existing);
         }
         return;
       }
       alert(err.message || "Could not create order. Please try again.");
+    } finally {
+      submittingOrder = false;
+      if (!activeBlockingOrder) setOrderFormLocked(false);
+      else setOrderFormLocked(true);
     }
   }
 
@@ -641,6 +741,10 @@ function initOrderStatusWatcher() {
     const completed = orders.find((o) => orderNeedsReview(o, customer.id));
     if (completed && typeof showReviewRequiredModal === "function") {
       showReviewRequiredModal(completed, customer.id);
+    }
+
+    if (typeof window.refreshActiveOrderNotice === "function") {
+      window.refreshActiveOrderNotice();
     }
   }
 

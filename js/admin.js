@@ -274,7 +274,7 @@ function renderOrderTable() {
 
   if (orders.length === 0) {
     tbody.innerHTML = `
-      <tr><td colspan="9" class="admin-no-results">
+      <tr class="admin-no-results-row"><td colspan="9" class="admin-no-results" data-label="">
         <p>No orders match your filter or search.</p>
         <button type="button" class="btn btn-outline btn-sm" onclick="clearFilters()">Clear filters</button>
       </td></tr>`;
@@ -291,15 +291,15 @@ function renderOrderRow(o) {
 
   return `
     <tr class="admin-order-row row-status-${status}">
-      <td><code class="admin-order-id">${escapeHtml(o.id)}</code></td>
-      <td><span class="status-badge ${badgeClass}">${escapeHtml(orderStatusLabel(status))}</span></td>
-      <td>${escapeHtml(o.username)}</td>
-      <td class="admin-order-rerolls">${o.rerollAmount}</td>
-      <td class="admin-order-price">${formatPrice(o.pricePHP)}</td>
-      <td><span class="payment-badge ${paymentClass(o.paymentMethod)}">${paymentLabel(o.paymentMethod)}</span></td>
-      <td><time datetime="${escapeHtml(o.createdAt || "")}">${escapeHtml(dateTime)}</time></td>
-      <td>${o.reviewCode ? `<code class="admin-review-code">${escapeHtml(o.reviewCode)}</code>` : "—"}</td>
-      <td class="admin-order-actions-cell">${renderOrderActions(o)}</td>
+      <td data-label="Order ID" class="admin-order-id-cell"><code class="admin-order-id">${escapeHtml(o.id)}</code></td>
+      <td data-label="Status"><span class="status-badge ${badgeClass}">${escapeHtml(orderStatusLabel(status))}</span></td>
+      <td data-label="Username" class="admin-order-user-cell">${escapeHtml(o.username)}</td>
+      <td data-label="Rerolls" class="admin-order-rerolls">${o.rerollAmount}</td>
+      <td data-label="Price" class="admin-order-price">${formatPrice(o.pricePHP)}</td>
+      <td data-label="Payment"><span class="payment-badge ${paymentClass(o.paymentMethod)}">${paymentLabel(o.paymentMethod)}</span></td>
+      <td data-label="Ordered (PH)" class="admin-order-date-cell"><time datetime="${escapeHtml(o.createdAt || "")}">${escapeHtml(dateTime)}</time></td>
+      <td data-label="Review Code" class="admin-order-code-cell">${o.reviewCode ? `<code class="admin-review-code">${escapeHtml(o.reviewCode)}</code>` : "—"}</td>
+      <td data-label="Actions" class="admin-order-actions-cell">${renderOrderActions(o)}</td>
     </tr>`;
 }
 
@@ -316,25 +316,25 @@ function renderOrderActions(o) {
   if (status === "pending") {
     parts.push(
       `<button type="button" class="btn btn-outline btn-sm btn-void-order" data-id="${escapeHtml(o.id)}">Void</button>`,
-      `<button type="button" class="btn btn-primary btn-sm btn-verify" data-id="${escapeHtml(o.id)}">✓ Verify Payment</button>`
+      `<button type="button" class="btn btn-primary btn-sm btn-verify" data-id="${escapeHtml(o.id)}">Verify</button>`
     );
   }
 
   if (status === "processing") {
     parts.push(
-      `<button type="button" class="btn btn-green btn-sm btn-complete" data-id="${escapeHtml(o.id)}">Complete & Code</button>`
+      `<button type="button" class="btn btn-green btn-sm btn-complete" data-id="${escapeHtml(o.id)}">Complete</button>`
     );
   }
 
   if (o.reviewCode) {
     parts.push(
-      `<button type="button" class="btn btn-outline btn-sm btn-copy-code" data-code="${escapeHtml(o.reviewCode)}">Copy Code</button>`
+      `<button type="button" class="btn btn-outline btn-sm btn-copy-code" data-code="${escapeHtml(o.reviewCode)}" title="Copy ${escapeHtml(o.reviewCode)}">Copy code</button>`
     );
   }
 
   if (o.customerId && status !== "voided") {
     parts.push(
-      `<button type="button" class="btn btn-outline btn-sm btn-order-chat" data-order-id="${escapeHtml(o.id)}">💬 Chat</button>`
+      `<button type="button" class="btn btn-outline btn-sm btn-order-chat" data-order-id="${escapeHtml(o.id)}">Chat</button>`
     );
   }
 
@@ -342,7 +342,8 @@ function renderOrderActions(o) {
     parts.push(`<span class="admin-order-voided-note">Voided</span>`);
   }
 
-  return parts.join(" ") || "—";
+  if (!parts.length) return "—";
+  return `<div class="admin-order-actions-stack">${parts.join("")}</div>`;
 }
 
 function clearFilters() {

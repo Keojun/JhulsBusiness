@@ -98,6 +98,18 @@
       <h1 class="section-title text-center">Gakuran Rerolls</h1>
       <p class="section-subtitle text-center">Browse the shop freely. When you&apos;re ready to buy, click Place Order — you&apos;ll be asked to log in or create an account.</p>
 
+      <div class="notice notice-info hidden" id="order-active-notice" role="status">
+        <span class="notice-icon">📦</span>
+        <div>
+          <strong>You have an order in progress.</strong>
+          <span id="order-active-notice-text">Finish it with Jhul before placing another.</span>
+          <div class="order-active-notice-actions">
+            <button type="button" class="btn btn-outline btn-sm" id="btn-resume-active-order">Resume order</button>
+            <button type="button" class="btn btn-green btn-sm" id="btn-chat-active-order">Message Jhul</button>
+          </div>
+        </div>
+      </div>
+
       <div class="card card-with-sticker">
         <img src="images/jhul-happy.png" alt="" class="sticker card-sticker card-sticker-tr sticker-float" style="width:80px;" aria-hidden="true" />
         <form id="order-form">
