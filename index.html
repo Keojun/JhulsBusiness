@@ -39,8 +39,12 @@
         </div>
 
         <div class="nav-group nav-group-actions">
-          <span class="auth-user-pill">👤 <span id="auth-user-label">User</span></span>
-          <button type="button" class="nav-action-link nav-action-logout" id="btn-logout-customer">Sign out</button>
+          <div class="nav-guest-auth" id="nav-guest-auth">
+            <a href="/login" class="nav-action-link" id="nav-login-link">Log in</a>
+            <a href="/login?tab=signup" class="nav-action-link nav-action-signup" id="nav-signup-link">Sign up</a>
+          </div>
+          <span class="auth-user-pill hidden">👤 <span id="auth-user-label">User</span></span>
+          <button type="button" class="nav-action-link nav-action-logout hidden" id="btn-logout-customer">Sign out</button>
         </div>
 
         <div class="nav-group nav-group-social">

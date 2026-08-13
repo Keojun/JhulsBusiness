@@ -495,6 +495,11 @@ function initOrderForm() {
   async function submitOrder(e) {
     e.preventDefault();
 
+    if (typeof requireLoginForAction === "function") {
+      const customer = await requireLoginForAction("/gakuran");
+      if (!customer) return;
+    }
+
     const username = document.getElementById("username").value.trim();
     const rerollAmount = Number(document.getElementById("reroll-amount").value);
 

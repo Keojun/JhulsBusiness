@@ -126,7 +126,8 @@ function hideChatFab() {
 function openChatPanel(orderContext = null) {
   getCurrentCustomer().then(async (c) => {
     if (!c) {
-      window.location.replace("/login?redirect=" + encodeURIComponent("/gakuran"));
+      const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+      window.location.replace(`/login?redirect=${redirect}`);
       return;
     }
 

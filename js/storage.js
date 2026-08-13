@@ -300,7 +300,7 @@ async function addSiteReview(review, code) {
 
 async function getSiteReviews() {
   try {
-    const res = await customerFetch("/api/reviews?type=site");
+    const res = await fetch("/api/reviews?type=site");
     if (res.ok) return await res.json();
   } catch (_) {}
   return getSiteReviewsLocal();
@@ -308,7 +308,7 @@ async function getSiteReviews() {
 
 async function getFacebookReviews() {
   try {
-    const res = await customerFetch("/api/reviews?type=facebook");
+    const res = await fetch("/api/reviews?type=facebook");
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) return data;
