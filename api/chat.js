@@ -103,7 +103,6 @@ module.exports = async function handler(req, res) {
 
     const body = await parseBody(req);
     const resource = getResource(req, body);
-    const isAdmin = checkAdmin(req, body);
     const customer = await getCustomerFromRequest(req);
     const url = new URL(req.url || "/", "http://localhost");
 
@@ -118,16 +117,18 @@ module.exports = async function handler(req, res) {
         return sendJson(res, 400, { error: "conversationId is required" });
       }
 
-      if (!isAdmin && !customer) {
+      const adminView = checkAdmin(req, body);
+
+      if (!adminView && !customer) {
         return sendJson(res, 401, { error: "Login required" });
       }
 
       const conversation = await getConversation(conversationId);
-      if (!canAccessConversation(conversation, customer, isAdmin)) {
+      if (!canAccessConversation(conversation, customer, adminView)) {
         return sendJson(res, 403, { error: "Access denied" });
       }
 
-      if (!isAdmin && customer && !conversation.order_id) {
+      if (!adminView && customer && !conversation.order_id) {
         return sendJson(res, 403, {
           error: "This chat is no longer available. Message Jhul about a specific order instead.",
         });
@@ -146,7 +147,7 @@ module.exports = async function handler(req, res) {
         const data = await dbRequest("GET", "messages", { query });
         const messages = (Array.isArray(data) ? data : []).map(mapMessage);
 
-        if (isAdmin) {
+        if (adminView) {
           const unread = (Array.isArray(data) ? data : []).filter(
             (m) => m.sender_type === "customer" && !m.read_at
           );
@@ -180,7 +181,7 @@ module.exports = async function handler(req, res) {
           return sendJson(res, 400, { error: "Message too long (max 2000 characters)" });
         }
 
-        if (isAdmin) {
+        if (adminView) {
           if (!checkAdmin(req, body)) {
             return sendJson(res, 401, { error: "Unauthorized" });
           }
@@ -193,7 +194,7 @@ module.exports = async function handler(req, res) {
           }
         }
 
-        const senderType = isAdmin ? "admin" : "customer";
+        const senderType = adminView ? "admin" : "customer";
 
         const rows = await dbRequest("POST", "messages", {
           body: {
@@ -218,7 +219,9 @@ module.exports = async function handler(req, res) {
     }
 
     if (req.method === "GET") {
-      if (isAdmin) {
+      const adminView = checkAdmin(req, body);
+
+      if (adminView) {
         if (!checkAdmin(req, body)) {
           return sendJson(res, 401, { error: "Unauthorized" });
         }
@@ -237,7 +240,9 @@ module.exports = async function handler(req, res) {
     }
 
     if (req.method === "POST") {
-      if (isAdmin) {
+      const adminView = checkAdmin(req, body);
+
+      if (adminView) {
         const orderId = body.orderId || body.order_id || null;
         if (!orderId) {
           return sendJson(res, 400, { error: "orderId is required to start a chat" });

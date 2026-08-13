@@ -48,7 +48,11 @@ function setAdminPassword(pw) {
 }
 
 function adminHeaders(extra = {}) {
-  const headers = { "Content-Type": "application/json", ...extra };
+  const headers = {
+    "Content-Type": "application/json",
+    "X-RBXDISC-Admin": "1",
+    ...extra,
+  };
   if (adminPassword) headers["X-Admin-Password"] = adminPassword;
   return headers;
 }
