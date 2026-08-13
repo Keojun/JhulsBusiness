@@ -35,6 +35,11 @@ function switchTab(tab) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("tab") === "signup") {
+    switchTab("signup");
+  }
+
   const existing = await getCurrentCustomer();
   if (existing) {
     window.location.replace(getRedirectTarget());

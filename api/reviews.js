@@ -42,9 +42,6 @@ module.exports = async function handler(req, res) {
     }
 
     if (req.method === "GET") {
-      const customer = await requireCustomer(req, res, sendJson);
-      if (!customer) return;
-
       const type = new URL(req.url || "/", "http://localhost").searchParams.get("type") || "site";
       const table = type === "facebook" ? "facebook_reviews" : "site_reviews";
 

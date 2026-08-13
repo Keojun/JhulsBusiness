@@ -617,6 +617,28 @@ body {
   vertical-align: middle;
 }
 
+.nav-guest-auth {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.65rem;
+}
+
+.nav-guest-auth.hidden {
+  display: none;
+}
+
+.nav-action-signup {
+  background: linear-gradient(135deg, var(--green-mid), var(--green-deep)) !important;
+  color: white !important;
+  border-radius: 999px;
+  padding: 0.45rem 0.95rem !important;
+}
+
+.nav-action-signup:hover {
+  filter: brightness(1.05);
+}
+
 .header-actions {
   display: flex;
   align-items: center;
