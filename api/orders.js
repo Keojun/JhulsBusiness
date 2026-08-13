@@ -8,7 +8,7 @@ const {
 } = require("../lib/db");
 const { formatPhilippinesDateTime } = require("../lib/datetime");
 const { getCustomerFromRequest } = require("../lib/auth");
-const { ORDER_STATUSES, isActiveOrderStatus } = require("../lib/order-status");
+const { ORDER_STATUSES, blocksNewOrder, statusLabel } = require("../lib/order-status");
 
 function mapOrderRow(o) {
   return {
@@ -32,17 +32,41 @@ async function getOrderById(orderId) {
   return Array.isArray(rows) ? rows[0] : null;
 }
 
-async function findDuplicateActiveOrder(customerId, rerollAmount, excludeId = null) {
+async function findActiveOrderForCustomer(customerId, excludeId = null) {
   const rows = await dbRequest("GET", "orders", {
-    query: `customer_id=eq.${customerId}&reroll_amount=eq.${Number(rerollAmount)}&select=id,status,created_at&order=created_at.desc`,
+    query: `customer_id=eq.${customerId}&select=id,status,created_at,reroll_amount&order=created_at.desc`,
   });
   const orders = Array.isArray(rows) ? rows : [];
-  const cutoff = Date.now() - 30 * 60 * 1000;
 
   return orders.find((o) => {
     if (excludeId && o.id === excludeId) return false;
-    if (!isActiveOrderStatus(o.status)) return false;
-    return new Date(o.created_at).getTime() >= cutoff;
+    return blocksNewOrder(o.status);
+  }) || null;
+}
+
+async function listActiveOrdersForCustomer(customerId) {
+  const rows = await dbRequest("GET", "orders", {
+    query: `customer_id=eq.${customerId}&select=id,status,created_at,reroll_amount&order=created_at.asc`,
+  });
+  const orders = Array.isArray(rows) ? rows : [];
+  return orders.filter((o) => blocksNewOrder(o.status));
+}
+
+function activeOrderConflictResponse(active) {
+  const label = statusLabel(active.status);
+  return {
+    error: `You already have an order in progress (${active.id} — ${label}). Finish this order with Jhul before placing another.`,
+    existingOrderId: active.id,
+    existingOrderStatus: active.status,
+    existingOrderStatusLabel: label,
+  };
+}
+
+async function rollbackDuplicateInsert(orderId) {
+  await dbRequest("PATCH", "orders", {
+    query: `id=eq.${encodeURIComponent(orderId)}`,
+    body: { status: ORDER_STATUSES.VOIDED, review_code: null },
+    prefer: "return=minimal",
   });
 }
 
@@ -216,12 +240,9 @@ module.exports = async function handler(req, res) {
         return sendJson(res, 200, mapOrderRow(existing));
       }
 
-      const duplicate = await findDuplicateActiveOrder(customer.id, rerollAmount);
+      const duplicate = await findActiveOrderForCustomer(customer.id);
       if (duplicate) {
-        return sendJson(res, 409, {
-          error: "You already have an active order in progress. Finish or wait before placing another.",
-          existingOrderId: duplicate.id,
-        });
+        return sendJson(res, 409, activeOrderConflictResponse(duplicate));
       }
 
       const normalizedUsername = String(username).trim();
@@ -245,6 +266,17 @@ module.exports = async function handler(req, res) {
       });
 
       const data = Array.isArray(rows) ? rows[0] : rows;
+
+      // Race guard: if two orders were created at once, void the newer duplicate.
+      const actives = await listActiveOrdersForCustomer(customer.id);
+      if (actives.length > 1) {
+        const oldest = actives[0];
+        if (oldest.id !== id) {
+          await rollbackDuplicateInsert(id);
+          return sendJson(res, 409, activeOrderConflictResponse(oldest));
+        }
+      }
+
       return sendJson(res, 201, { ...mapOrderRow(data), savedToDb: true });
     }
 

@@ -1391,9 +1391,9 @@ body.nav-open {
 }
 
 .admin-panel {
-  max-width: 1100px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem 1rem 3rem;
+  padding: 2rem 1.25rem 3rem;
 }
 
 .admin-clock {
@@ -1594,12 +1594,17 @@ body.nav-open {
 
 .admin-filter-tabs {
   display: flex;
+  flex-wrap: nowrap;
   gap: 0.4rem;
   background: white;
   padding: 0.35rem;
   border-radius: 999px;
   border: 2px solid var(--green-pastel);
   box-shadow: var(--shadow);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  scrollbar-width: thin;
 }
 
 .admin-filter-tab {
@@ -1613,6 +1618,8 @@ body.nav-open {
   color: var(--dark-soft);
   cursor: pointer;
   transition: all 0.2s;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .admin-filter-tab:hover {
@@ -1902,9 +1909,10 @@ body.nav-open {
 
 .stat-reviewed .admin-stat-value { color: #3949ab; }
 
-/* Orders table */
+/* Orders table — desktop */
 .admin-orders-table-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   margin-bottom: 1.5rem;
   border-radius: var(--radius);
   border: 2px solid var(--green-pastel);
@@ -1912,11 +1920,20 @@ body.nav-open {
   box-shadow: var(--shadow);
 }
 
+.admin-orders-table-scroll-hint {
+  display: none;
+  margin: -0.75rem 0 1rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--dark-soft);
+  text-align: center;
+}
+
 .admin-orders-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.88rem;
-  min-width: 960px;
+  table-layout: auto;
 }
 
 .admin-orders-table th,
@@ -1924,7 +1941,7 @@ body.nav-open {
   padding: 0.75rem 0.85rem;
   text-align: left;
   border-bottom: 1px solid var(--green-pastel);
-  vertical-align: middle;
+  vertical-align: top;
 }
 
 .admin-orders-table th {
@@ -1936,7 +1953,8 @@ body.nav-open {
   color: var(--dark-soft);
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 2;
+  white-space: nowrap;
 }
 
 .admin-orders-table tbody tr:hover {
@@ -1951,12 +1969,56 @@ body.nav-open {
   background: #fffdf5;
 }
 
-.admin-order-actions-cell {
+.admin-order-id-cell {
+  min-width: 9.5rem;
+}
+
+.admin-order-id {
+  word-break: break-all;
+  white-space: normal;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.admin-order-user-cell {
+  min-width: 5.5rem;
+  max-width: 10rem;
+  word-break: break-word;
+}
+
+.admin-order-date-cell time {
   white-space: nowrap;
 }
 
-.admin-order-actions-cell .btn {
-  margin: 0.15rem 0.2rem 0.15rem 0;
+.admin-order-code-cell .admin-review-code {
+  word-break: break-all;
+  white-space: normal;
+  display: inline-block;
+}
+
+.admin-order-actions-cell {
+  min-width: 11rem;
+  max-width: 16rem;
+  white-space: normal;
+}
+
+.admin-order-actions-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.admin-order-actions-stack .btn {
+  margin: 0;
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
+
+.admin-order-actions-stack .admin-order-voided-note {
+  width: 100%;
+  text-align: center;
+  margin: 0;
 }
 
 .admin-review-code {
@@ -1974,13 +2036,172 @@ body.nav-open {
   border: none !important;
 }
 
-.admin-filter-tabs {
-  flex-wrap: wrap;
-}
-
 .admin-no-results {
   padding: 2rem 1rem !important;
   text-align: center;
+}
+
+/* Wide desktop — full table without forced scroll */
+@media (min-width: 1200px) {
+  .admin-orders-table {
+    min-width: 0;
+  }
+
+  .admin-orders-table-wrap {
+    overflow-x: visible;
+  }
+}
+
+/* Laptop / narrow desktop — scrollable table with hint */
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .admin-orders-table {
+    min-width: 980px;
+  }
+
+  .admin-orders-table-scroll-hint {
+    display: block;
+  }
+}
+
+/* Tablet & phone — card layout (no horizontal scroll) */
+@media (max-width: 1023px) {
+  .admin-panel {
+    padding: 1.35rem 0.85rem 2.5rem;
+  }
+
+  .admin-orders-table-wrap {
+    overflow: visible;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  .admin-orders-table {
+    min-width: 0;
+    display: block;
+  }
+
+  .admin-orders-table thead {
+    display: none;
+  }
+
+  .admin-orders-table tbody {
+    display: block;
+  }
+
+  .admin-orders-table tr.admin-order-row {
+    display: block;
+    background: white;
+    border: 2px solid var(--green-pastel);
+    border-radius: var(--radius);
+    padding: 0.85rem 1rem 1rem;
+    margin-bottom: 0.85rem;
+    box-shadow: var(--shadow);
+  }
+
+  .admin-orders-table tr.admin-order-row:hover {
+    background: white;
+  }
+
+  .admin-orders-table tr.admin-no-results-row,
+  .admin-orders-table td.admin-no-results {
+    display: block;
+    border: 2px dashed var(--green-pastel);
+    border-radius: var(--radius);
+    background: white;
+    padding: 2rem 1rem;
+  }
+
+  .admin-orders-table td {
+    display: grid;
+    grid-template-columns: minmax(7.5rem, 36%) 1fr;
+    gap: 0.25rem 0.75rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--green-pastel);
+    align-items: start;
+    text-align: left;
+  }
+
+  .admin-orders-table td:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .admin-orders-table td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--dark-soft);
+    padding-top: 0.1rem;
+  }
+
+  .admin-order-actions-cell {
+    display: block;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .admin-order-actions-cell::before {
+    display: block;
+    margin-bottom: 0.45rem;
+  }
+
+  .admin-order-actions-stack {
+    width: 100%;
+  }
+
+  .admin-order-actions-stack .btn {
+    flex: 1 1 calc(50% - 0.25rem);
+    min-width: 7rem;
+    min-height: 2.5rem;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .admin-order-actions-stack .btn-complete,
+  .admin-order-actions-stack .btn-verify {
+    flex: 1 1 100%;
+  }
+
+  .admin-order-date-cell time {
+    white-space: normal;
+  }
+
+  .admin-stats-extended {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .admin-main-tabs {
+    flex-wrap: wrap;
+  }
+
+  .admin-chat-inbox {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .admin-chat-thread-wrap {
+    min-height: 360px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-order-actions-stack .btn {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .admin-stat-value {
+    font-size: 1.35rem;
+  }
+
+  .admin-filter-tab {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.82rem;
+  }
 }
 
 /* Legacy table (kept for reference) */
@@ -2713,6 +2934,13 @@ body.nav-open {
 
 .order-section {
   margin-bottom: 2rem;
+}
+
+.order-active-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 .confirm-panel {

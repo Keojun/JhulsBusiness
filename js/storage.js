@@ -139,6 +139,8 @@ async function addOrder(order) {
     if (res.status === 409 && data.existingOrderId) {
       const err = new Error(data.error || "Duplicate order");
       err.existingOrderId = data.existingOrderId;
+      err.existingOrderStatus = data.existingOrderStatus;
+      err.existingOrderStatusLabel = data.existingOrderStatusLabel;
       err.status = 409;
       throw err;
     }

@@ -38,3 +38,12 @@ function orderStatusBadgeClass(status) {
   };
   return map[status] || "status-pending";
 }
+
+function orderBlocksNewOrder(status) {
+  return ["awaiting_payment", "pending", "processing"].includes(status);
+}
+
+function findActiveCustomerOrder(orders) {
+  if (!Array.isArray(orders)) return null;
+  return orders.find((o) => orderBlocksNewOrder(o.status)) || null;
+}
