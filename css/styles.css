@@ -1981,9 +1981,19 @@ body.nav-open {
 }
 
 .admin-order-user-cell {
-  min-width: 5.5rem;
-  max-width: 10rem;
   word-break: break-word;
+}
+
+@media (min-width: 1024px) {
+  .admin-order-user-cell {
+    min-width: 5.5rem;
+    max-width: 10rem;
+  }
+
+  .admin-order-actions-cell {
+    min-width: 11rem;
+    max-width: 16rem;
+  }
 }
 
 .admin-order-date-cell time {
@@ -1997,8 +2007,6 @@ body.nav-open {
 }
 
 .admin-order-actions-cell {
-  min-width: 11rem;
-  max-width: 16rem;
   white-space: normal;
 }
 
@@ -2114,13 +2122,12 @@ body.nav-open {
   }
 
   .admin-orders-table td {
-    display: grid;
-    grid-template-columns: minmax(7.5rem, 36%) 1fr;
-    gap: 0.25rem 0.75rem;
-    padding: 0.55rem 0;
+    display: block;
+    padding: 0.65rem 0;
     border-bottom: 1px solid var(--green-pastel);
-    align-items: start;
     text-align: left;
+    min-width: 0;
+    max-width: none;
   }
 
   .admin-orders-table td:last-child {
@@ -2129,23 +2136,35 @@ body.nav-open {
   }
 
   .admin-orders-table td::before {
+    display: block;
     content: attr(data-label);
     font-weight: 700;
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--dark-soft);
-    padding-top: 0.1rem;
+    margin-bottom: 0.35rem;
   }
 
+  .admin-order-id-cell,
+  .admin-order-user-cell,
+  .admin-order-date-cell,
+  .admin-order-code-cell,
   .admin-order-actions-cell {
-    display: block;
-    max-width: none;
     min-width: 0;
+    max-width: none;
+  }
+
+  .admin-order-user-cell {
+    word-break: normal;
+    overflow-wrap: break-word;
+  }
+
+  .admin-order-id {
+    word-break: break-all;
   }
 
   .admin-order-actions-cell::before {
-    display: block;
     margin-bottom: 0.45rem;
   }
 
